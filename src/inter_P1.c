@@ -104,7 +104,7 @@ main(int argc, char *argv[])
 	// Print the itnerpol value
 
 	for(i = 0; i < g_point[0]->dim; i++)
-	  fprintf(stdout," pt %d, value = %f \n",i,new_value[i]);
+	  fprintf(stdout," pt %d°, value = %f \n",i+1,new_value[i]);
 
 	clear_grid(g_nod,dim_space);
 	clear_grid(g_point,dim_space);

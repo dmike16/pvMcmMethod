@@ -9,8 +9,8 @@ vpath %.h include
 
 CFLAGS = -I include -Wall -W -ansi -pedantic -std=gnu99 -c 
 CC = gcc
-SOURCE := inter_P1.c grid.c u0.c
-objs = inter_P1.o grid.o u0.o
+SOURCE := $(wildcard src/*.c)
+objs := $(subst .c,.o,$(SOURCE)) 
 lib := -lm
 
 define print-msg 
@@ -20,15 +20,27 @@ define print-msg
 @echo "#  Licence : open source \n#"
 endef
 
+define make-depend
+  $(CC)  $(CFLAGS) -MM $1 | \
+  sed 's,\($(notdir $2)\) *:,$2 $3: ,' > $3.tmp
+  sed -e 's/#.*//' \
+      -e 's/^[^:]*: *//' \
+      -e 's/ *\\$$$$//'  \
+      -e '/^$$$$/ d'     \
+      -e 's/$$$$/ :/'    \
+      -e 's/$$/:/' $3.tmp >> $3.tmp
+  mv $3.tmp $3
+endef
+
 ifeq ($(strip $(OPTIONS)),-d)
 CFLAGS += -DMTRACE
 endif
 
-.PHONY : all
+PHONY := all
 
 all: build_msg p1
 
-.PHONY : build_msg
+PHONY += build_msg
 
 build_msg :
 	$(print-msg)
@@ -36,28 +48,30 @@ build_msg :
 p1 : $(objs)
 	$(CC) $^ -o $@ $(lib)
 
-inter_P1.o grid.o u0.o :
+$(objs) :
 
--include $(subst .c,.d,$(SOURCE))
+ifneq ($(MAKECMDGOALS),clean)
+ -include $(subst .c,.d,$(SOURCE))
+endif
 
 
-%.d: %.c
-	@set -e; rm -f $@; \
-	$(CC) -M $(CFLAGS) $< > $@.$$$$; \
-	sed 's,\($*\).o[ :]*,\1.o $@ : ,g' <$@.$$$$ > $@; \
-	rm -f $@.$$$$
+%.o: %.c
+	$(call make-depend,$<,$@,$(subst .o,.d,$@))
+	$(CC) $(CFLAGS) -o $@ $<
 
-.PHONY : clean
+PHONY += clean
 
 clean :
-	-rm -rf p1 *~ *.d *.o src/*~ include/*~
+	-rm -rf p1 *~ src/*.d src/*.o src/*~ include/*~
 
 # help -
 
-.PHONY: debug-memory
+PHONY += debug-memory
 
 debug-memory :
 	export MALLOC_TRACE=memory.log
 	@$(MAKE) OPTIONS=-d
 	./p1 ini.dat
 	mtrace p1 $(MALLOC_TRACE)
+
+.PHONY : $(PHONY)
