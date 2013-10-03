@@ -1,77 +1,197 @@
-# Makefile to build the R^n linear interpolation
+# *DOCUMENTATION*
+# To see a list of typical targets execute "make help"
 # Author: dmike
 # Email : cipmiky@gmail.com
-# This is part of a large program, that is based on the Semi-Lagrangian 
-# by mean  curve flow method.
+# This is the principal makefile of the the Semi-Lagrangian
+# by mean  curve flow method program.
 
-vpath %.c src
-vpath %.h include
+# Do not:
+# * use make's built-in rules and variables;
+# * print "Entering directory..."
+MAKEFLAGS += -rR --no-print-directory
 
-CFLAGS = -I include -Wall -W -ansi -pedantic -std=gnu99 -c 
-CC = gcc
-SOURCE := $(wildcard src/*.c)
-objs := $(subst .c,.o,$(SOURCE)) 
-lib := -lm
 
-define print-msg 
-@echo "#\n#    Makefile to Build P1 \n#"
-@echo "#  Author  : dmike "
-@echo "#  Email   : cipmiky@gmail.com "
-@echo "#  Licence : open source \n#"
-endef
+# That's the default target
+PHONY  := _all
+_all:
 
-define make-depend
-  $(CC)  $(CFLAGS) -MM $1 | \
-  sed 's,\($(notdir $2)\) *:,$2 $3: ,' > $3.tmp
-  sed -e 's/#.*//' \
-      -e 's/^[^:]*: *//' \
-      -e 's/ *\\$$$$//'  \
-      -e '/^$$$$/ d'     \
-      -e 's/$$$$/ :/'    \
-      -e 's/$$/:/' $3.tmp >> $3.tmp
-  mv $3.tmp $3
-endef
+# Delete implicit rules on top Makefile
+$(CURDIR)/Makefile Makefile: ;
 
-ifeq ($(strip $(OPTIONS)),-d)
-CFLAGS += -DMTRACE
+
+# The _all target depend on library necessary to the program
+PHONY += all
+_all: all
+
+srctree		:=$(if $(KBUILD_SRC),$(KBUILD_SRC),$(CURDIR))
+objtree		:=$(CURDIR)
+src		:=$(srctree)
+obj		:=$(objtree)
+
+VPATH		:= $(srctree)
+
+export srctree objtree VPATH
+
+# Beautify output
+# ---------------------------------------------------------------------------
+#
+# Normally, we echo the whole command before executing it. By making
+# that echo $($(quiet)$(cmd)), we now have the possibility to set
+# $(quiet) to choose other forms of output instead, e.g.
+#
+#         quiet_cmd_cc_o_c = Compiling $(RELDIR)/$@
+#         cmd_cc_o_c       = $(CC) $(c_flags) -c -o $@ $<
+#
+# If $(quiet) is empty, the whole command will be printed.
+# If it is set to "quiet_", only the short version will be printed. 
+# If it is set to "silent_", nothing will be printed at all, since
+# the variable $(silent_cmd_cc_o_c) doesn't exist.
+#
+# A simple variant is to prefix commands with $(Q) - that's useful
+# for commands that shall be hidden in non-verbose mode.
+#
+#	$(Q)ln $@ :<
+#
+#
+
+quiet=quiet_
+Q = @
+
+ifneq ($(findstring s,$(MAKEFLAGS)),)
+  quiet=silent_
 endif
 
-PHONY := all
+export quiet Q
 
-all: build_msg p1
+#Look for make include files relative to root of kernel src
+MAKEFLAGS += --include-dir=$(srctree)
 
-PHONY += build_msg
+# We need some generic definitions.
+$(srctree)/scripts/Kbuild.include: ;
+include $(srctree)/scripts/Kbuild.include
 
-build_msg :
-	$(print-msg)
+CC		= gcc
+CFLAGS		= -W -Wall -Wmissing-prototypes -O3 -pedantic -ansi -std=gnu99
+AR		= ar
+LD		= ld
+MKDIR		= mkdir
 
-p1 : $(objs)
-	$(CC) $^ -o $@ $(lib)
-
-$(objs) :
-
-ifneq ($(MAKECMDGOALS),clean)
- -include $(subst .c,.d,$(SOURCE))
-endif
+LINUXINCLUDE	:= -Iinclude $(if $(KBUILD_SRC), -I$(srctree)/include)
+SYSTEM-LIBRARIES:= -lm
 
 
-%.o: %.c
-	$(call make-depend,$<,$@,$(subst .o,.d,$@))
-	$(CC) $(CFLAGS) -o $@ $<
+export CONFIG_SHELL CC AR CFLAGS MAKE LINUXINCLUDE LD OPTIONS
+export KBUILD_ARFLAGS := D
 
-PHONY += clean
+# Primary target dependencies
+all: pvschema
 
-clean :
-	-rm -rf p1 *~ src/*.d src/*.o src/*~ include/*~
+core-y		:= pvmcm/
+init-y		:= init/
+libs-y		:= lib/
+drivers-y	:= ic/
 
-# help -
+pvschema-dirs	:= $(patsubst %/,%,$(filter %/,$(init-y) \
+			$(core-y) $(libs-y) $(drivers-y)))
+pvschema-alldirs := $(sort $(pvschema-dirs))
+
+init-y		:= $(patsubst %/, %/built-in.o, $(init-y))
+core-y		:= $(patsubst %/, %/built-in.o, $(core-y))
+drivers-y	:= $(patsubst %/, %/built-in.o, $(drivers-y))
+libs-y		:= $(patsubst %/, %/lib.a, $(libs-y))
+
+#Build pvshema
+#------------------------------------------------------------------------------
+
+pvschema-init := $(init-y)
+pvschema-main := $(core-y) $(libs-y) $(drivers-y)
+pvschema-all  := $(pvschema-init) $(pvschema-main)
+export KBUILD_PVSCHEMA_OBJS := $(pvschema-all)
+
+pvschema: $(pvschema-init) $(pvschema-main)
+	$(CC) -o arch/$@ $^ $(SYSTEM-LIBRARIES)
+
+
+$(sort $(pvschema-init) $(pvschema-main)): $(pvschema-dirs) ;
+
+PHONY += $(pvschema-dirs)
+$(pvschema-dirs): 
+	$(Q)$(MAKE) $(build)=$@
+
+### 
+# Cleaning is done on two levels
+# make clean 	Delete all the backup file from text editor
+#		Leave all the objects generated
+# make clobber	Delete all the .o files, the lib and the executable program
+
+# Files removed with 'make clean'
+CLEAN-FILES	= include/*~ scripts/*~
+# Directories removed with 'make clobber'
+CLOBBER-DIRS	= arch
+
+# Delete only the backup files from text editor
+#
+clean: rm-files := $(CLEAN-FILES)
+clean-dirs	:= $(addprefix _clean_, . $(pvschema-alldirs))
+
+PHONY += $(clean-dirs) clean
+$(clean-dirs):
+	$(Q)$(MAKE) $(clean)=$(patsubst _clean_%,%,$@)
+
+clean: $(clean-dirs)
+	$(call cmd,rmfiles)
+# Delete all the files generated
+#
+clobber: rm-dirs := $(wildcard $(CLOBBER-DIRS))
+
+PHONY += clobber
+clobber: clean
+	$(call cmd,rmdirs)
+
+# Brief documentation of the typical targets used
+# ---------------------------------------------------------------------------
+
+help:
+	@echo  'Cleaning targets:'
+	@echo  '  clean		  - Remove backup files by text editor + object files + lib'
+	@echo  '  clobber	  - make clean + remove the executable program'
+	@echo  ''
+	@echo  'Other generic targets:'
+	@echo  '  all		  - Build all targets marked with '
+	@echo  'pvschema	  - Build the executable program'
+	@echo  ''
+
+#  Debug the programm to test if there are memory leaks
+#----------------------------------------------------------------------------
 
 PHONY += debug-memory
 
 debug-memory :
 	export MALLOC_TRACE=memory.log
 	@$(MAKE) OPTIONS=-d
-	./p1 ini.dat
-	mtrace p1 $(MALLOC_TRACE)
+	./pvschema ini.dat
+	mtrace pvschema $(MALLOC_TRACE)
+
+#===============================================================================
+
+quiet_cmd_rmdirs = $(if $(wildcard $(rm-dirs)),CLEAN   $(wildcard $(rm-dirs)))
+      cmd_rmdirs = rm -rf $(rm-dirs)
+
+quiet_cmd_rmfiles = $(if $(wildcard $(rm-files)),CLEAN   $(wildcard $(rm-files)))
+      cmd_rmfiles = rm -f $(rm-files)
+
+# Create output directory if does not exist
+ifneq ($(MAKECMDGOALS),clean)
+_create-out-dir :=    \
+	$(if $(call file-exists,  \
+	arch),, \
+	$(shell $(MKDIR) arch))
+endif
+
+# Shorthand for $(Q)$(MAKE) -f scripts/Makefile.clean obj=dir
+# Usage:
+# $(Q)$(MAKE) $(clean)=dir
+clean := -f $(if $(KBUILD_SRC),$(srctree)/)scripts/Makefile.clean obj
+
 
 .PHONY : $(PHONY)

@@ -1,0 +1,1 @@
+clean-files := *~ *.o *.d
