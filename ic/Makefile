@@ -1,2 +1,2 @@
 obj-y	+= u0.o
-clean-files := *.o *~
+clean-files := *.o *~ *.d

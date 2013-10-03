@@ -128,10 +128,11 @@ $(pvschema-dirs):
 CLEAN-FILES	= include/*~ scripts/*~
 # Directories removed with 'make clobber'
 CLOBBER-DIRS	= arch
+CLOBBER-FILES   = $(libs-y)
 
 # Delete only the backup files from text editor
 #
-clean: rm-files := $(CLEAN-FILES)
+clean: rm-files := $(wildcard $(CLEAN-FILES))
 clean-dirs	:= $(addprefix _clean_, . $(pvschema-alldirs))
 
 PHONY += $(clean-dirs) clean
@@ -143,9 +144,11 @@ clean: $(clean-dirs)
 # Delete all the files generated
 #
 clobber: rm-dirs := $(wildcard $(CLOBBER-DIRS))
+clobber: rm-files:= $(wildcard $(CLOBBER-FILES))
 
 PHONY += clobber
 clobber: clean
+	$(call cmd,rmfiles)
 	$(call cmd,rmdirs)
 
 # Brief documentation of the typical targets used
