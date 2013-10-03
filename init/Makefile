@@ -1,3 +1,4 @@
+obj-y 	+= main.o
 clean-files := *~ *.o *.d
 
 # Enable the Mtrace algoritmic to check memory leak

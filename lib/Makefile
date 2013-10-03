@@ -1,2 +1,2 @@
-lib-y	+= grid.o inter_P1.o
+lib-y	+= grid.o interpol_fun.o
 clean-files := *.o *~ *.d
