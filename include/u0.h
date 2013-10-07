@@ -6,12 +6,12 @@
 inline float 
 u_0(int n,float *point)
 {
-  register int i;
+  float *p;
   float u = 0.00f;
   
   
-  for (i = 0; i < n; i++)
-    u += point[i]*point[i]; 
+  for (p = point; p <point + n; p++)
+    u += (*p)*(*p); 
   if (sqrt(u) <= 1)
     return 1.0f-u;
   
