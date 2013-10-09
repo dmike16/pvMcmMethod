@@ -26,7 +26,7 @@ check(void *p,const char *msg)
 	}
 }
 
-gridType 
+static gridType 
 init_grid(int dim_space)
 {
 	gridType g = malloc(dim_space*sizeof(struct axes_nod*));
@@ -41,7 +41,7 @@ create_grid(const int dim_nod,const int dim_space,const float *first,
 		const float *step)
 {
 	register int i,j;
-	gridType g = malloc(dim_space*sizeof(struct axes_nod*));
+	gridType g = init_grid(dim_space);
 
 
 	for(i = 0; i < dim_space; i++){
@@ -90,13 +90,13 @@ interpol_points(int dim_space,float *first,float *last)
 }
 
 int 
-*find_position(int dim_space,int point_num,gridType g,float *first,float *step)
+*find_position(int dim_space,float *g,float *first,float *step)
 {
 	register int i;
 	int *index = malloc(dim_space*sizeof(int));
 
 	for (i = 0; i < dim_space; i++)
-		index[i] = (int) ((g[i]->nod[point_num] - first[i])/step[i]);
+		index[i] = (int) ((g[i] - first[i])/step[i]);
 
 	return index;
 }
@@ -127,14 +127,14 @@ float
 }
 
 int
-**find_index_region(gridType g, int dim_space, float *first, 
-		float *step, int num_point)
+**find_index_region(float *g, int dim_space, float *first, 
+		float *step)
 {
   register int i,j,mv_ = 0,mv_up = 1,mv_tmp = 0,i_tmp = 0,i_up,flag;
   int num_vertex = (int) powf(2,dim_space);
   int **index = malloc(num_vertex*sizeof(int*));
   
-  index[0] = find_position(dim_space,num_point,g,first,step);
+  index[0] = find_position(dim_space,g,first,step);
   flag = 1,i_up = 0;
   
   for (i = 1; i < num_vertex; i++){
@@ -170,15 +170,6 @@ int
   
   return index;
 }
-
-/*float 
-*eval_vertex_region(int dim_space, int num_p, gridType g_nod, gridType g_plus,
-		float *first, float *step, float (*f)(int,float*))
-{
-	register int i;
-	int **index;
-	gridType point;
-*/
 
 void 
 clear_grid (gridType g,int dim_space)
