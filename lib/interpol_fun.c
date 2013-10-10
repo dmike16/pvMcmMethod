@@ -10,103 +10,23 @@
 #include "grid.h"
 #include "interpol_fun.h"
 
-
-float
-interpol_fun(int dim_space,gridType g_nod,float *g_point,
-	     float *first,float *step, float(*f)(int,float*))
-{
-  register int i,j,k,l;
-
-  int num_vertex = (int)powf(2,dim_space);
-  float new_value;
-  float *point_value;
-  float **point;
-  int **index;
-
-  
-  index = find_index_region(g_point,dim_space,first,step,i);
-  point = find_region_grid(dim_space,g_nod,index);
-  point_value = find_point_value(dim_space,num_vertex,point,f);   
-  
-  new_value = interpol_linear_tree(dim_space,num_vertex,g_point,
-				   point,point_value);    
-  
-  free((void*)point_value);
-  clear_index((void**)point,dim_space);
-  clear_index((void**)index,dim_space);
-  
-  
-  return new_value;
-}
-
-float 
-*find_point_value(int dim_space, int num_vertex, float **point,
-		  float(*f)(int,float*))
+static float
+*set_level_func_value(int num_P1, float *tmp_value, float *point_value)
 {
   register int i;
-  float *value = malloc(num_vertex*sizeof(float));
 
-  if(value == NULL){
-    fprintf(stdout,"Error in malloc\n");
-    abort();
-  }
+  if((point_value = (float*)realloc((void*)point_value,num_P1*sizeof(float))) == NULL)
+    {
+      fprintf(stdout,"Error in realloc\n");
+      abort();
+    }
 
-  for (i = 0; i < num_vertex; i++)
-    value[i] = u_0(dim_space, point[i]);
+  for(i = 0; i < num_P1; i++)
+    point_value[i] = tmp_value[i];
 
-  return value;
+  return point_value;
 }
 
-float
-interpol_fun_discrete(int dim_space,int dim_nod,gridType g_nod,float *g_point,
-		      float *first,float *step, float *nod_values)
-{
-
-  int num_vertex = (int)powf(2,dim_space);
-  float new_value;
-  float **point,*point_value;
-  int **index;
-
-  
-  index = find_index_region(g_point,dim_space,first,step);
-  point = find_region_grid(dim_space,g_nod,index);
-  point_value = find_point_value_discrete(dim_space,dim_nod,num_vertex,
-					  index,nod_values);
-
-  new_value = interpol_linear_tree(dim_space,num_vertex,g_point,
-				   point,point_value);    
-  
-  free((void*)point_value);
-  clear_index((void**)point,dim_space);
-  clear_index((void**)index,dim_space);
-  
-  
-  return new_value;
-}
-
-static float 
-*find_point_value_discrete(int dim_space, int dim_nod, int num_vertex, 
-			   int **index,float *nod_values)
-{
-  register int i,j,esp;
-  int id;
-  float *value = malloc(num_vertex*sizeof(float));
-
-  if(value == NULL){
-    fprintf(stdout,"Error in malloc\n");
-    abort();
-  }
-
-  for (i = 0; i < num_vertex; i++){
-    id = 0;
-    for (j = 0,esp=dim_space-1; j < dim_space && esp >= 0; j++,esp--)
-      id += (int) pow(dim_nod,esp)*index[i][j];
-    value[i]=nod_values[id];
-  } 
-    
-
-  return value;
-}
 
 static float
 interpol_linear_tree(int dim_space, int num_vertex, float *g_point, 
@@ -161,19 +81,100 @@ interpol_linear_tree(int dim_space, int num_vertex, float *g_point,
 
 }
 
-static float
-*set_level_func_value(int num_P1, float *tmp_value, float *point_value)
+static float 
+*find_point_value_discrete(int dim_space, int dim_nod, int num_vertex, 
+			   int **index,float *nod_values)
+{
+  register int i,j,esp;
+  int id;
+  float *value = malloc(num_vertex*sizeof(float));
+
+  if(value == NULL){
+    fprintf(stdout,"Error in malloc\n");
+    abort();
+  }
+
+  for (i = 0; i < num_vertex; i++){
+    id = 0;
+    for (j = 0,esp=dim_space-1; j < dim_space && esp >= 0; j++,esp--)
+      id += (int) pow(dim_nod,esp)*index[i][j];
+    value[i]=nod_values[id];
+  } 
+    
+
+  return value;
+}
+
+static float 
+*find_point_value(int dim_space, int num_vertex, float **point,
+		  float(*f)(int,float*))
 {
   register int i;
+  float *value = malloc(num_vertex*sizeof(float));
 
-  if((point_value = (float*)realloc((void*)point_value,num_P1*sizeof(float))) == NULL)
-    {
-      fprintf(stdout,"Error in realloc\n");
-      abort();
-    }
+  if(value == NULL){
+    fprintf(stdout,"Error in malloc\n");
+    abort();
+  }
 
-  for(i = 0; i < num_P1; i++)
-    point_value[i] = tmp_value[i];
+  for (i = 0; i < num_vertex; i++)
+    value[i] = f(dim_space, point[i]);
 
-  return point_value;
+  return value;
 }
+
+float
+interpol_fun(int dim_space,gridType g_nod,float *g_point,
+	     float *first,float *step, float(*f)(int,float*))
+{
+  int num_vertex = (int)powf(2,dim_space);
+  float new_value;
+  float *point_value;
+  float **point;
+  int **index;
+
+  
+  index = find_index_region(g_point,dim_space,first,step);
+  point = find_region_grid(dim_space,g_nod,index);
+  point_value = find_point_value(dim_space,num_vertex,point,f);   
+  
+  new_value = interpol_linear_tree(dim_space,num_vertex,g_point,
+				   point,point_value);    
+  
+  free((void*)point_value);
+  clear_index((void**)point,dim_space);
+  clear_index((void**)index,dim_space);
+  
+  
+  return new_value;
+}
+
+
+float
+interpol_fun_discrete(int dim_space,int dim_nod,gridType g_nod,float *g_point,
+		      float *first,float *step, float *nod_values)
+{
+
+  int num_vertex = (int)powf(2,dim_space);
+  float new_value;
+  float **point,*point_value;
+  int **index;
+
+  
+  index = find_index_region(g_point,dim_space,first,step);
+  point = find_region_grid(dim_space,g_nod,index);
+  point_value = find_point_value_discrete(dim_space,dim_nod,num_vertex,
+					  index,nod_values);
+
+  new_value = interpol_linear_tree(dim_space,num_vertex,g_point,
+				   point,point_value);    
+  
+  free((void*)point_value);
+  clear_index((void**)point,dim_space);
+  clear_index((void**)index,dim_space);
+  
+  
+  return new_value;
+}
+
+
