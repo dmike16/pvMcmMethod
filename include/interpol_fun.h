@@ -5,8 +5,7 @@
 
 float interpol_fun(int dim_space,gridType g_nod, float *g_point,
 		    float *first,float *step,float(*f)(int,float*));
-float *find_point_value(int dim_space, int num_vertex,float **point,
-			float(*f)(int,float));
+
 float interpol_fun_discrete(int dim_space,int dim_nod,gridType g_nod,
 			    float *g_point,float *first,float *step, 
 			    float *nod_values);

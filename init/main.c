@@ -18,15 +18,18 @@
 #include "grid.h"
 #include "u0.h"
 #include "interpol_fun.h"
+#include "eval_ic_on_grid.h"
+
 
 int 
 main(int argc, char *argv[])
 {
-	gridType g_nod,g_point;
+	gridType g_nod;
 	register int i;
 	int dim_nod;
 	int dim_space;
-	float *first,*last,*step,*new_value;
+	float *first,*last,*step,*g_point;
+	float *nod_values;
 
 #ifdef MTRACE
 	mtrace();
@@ -80,25 +83,21 @@ main(int argc, char *argv[])
 			"DeltaX=%.2f\n",i+1,first[i],last[i],step[i]);
 	fprintf(stdout,"**********************************\n");
 
-	// Create the grid in R^n and the stores the interpol points
+	// Create the grid in R^n 
 	g_nod = create_grid(dim_nod,dim_space,first,step);
-	g_point = interpol_points(dim_space,first,last);
 
+	// Eval initial func on grid points	
+	nod_values = eval_ic_on_grid(dim_space,dim_nod,g_nod,u_0);
 
-	// Interpol the u0 function in the g_points grid
-        new_value = interpol_fun(dim_space,g_nod,g_point,first,step);
-
-	// Print the itnerpol value
-
-	for(i = 0; i < g_point[0]->dim; i++)
-	  fprintf(stdout," pt %d°, value = %f \n",i+1,new_value[i]);
+	if(nod_values)
+	  fprintf(stdout,"Values in memory \n");
 
 	clear_grid(g_nod,dim_space);
-	clear_grid(g_point,dim_space);
-	free((void*)new_value);
 	free((void*)step);
 	free((void*)first);
 	free((void*)last);
+	free((void*)g_point);
+	free((void*)nod_values);
 
 	return 0;
 

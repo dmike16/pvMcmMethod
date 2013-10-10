@@ -1,4 +1,4 @@
-obj-y 	+= main.o
+obj-y 	+= main.o eval_ic_on_grid.o
 clean-files := *~ *.o *.d
 
 # Enable the Mtrace algoritmic to check memory leak
