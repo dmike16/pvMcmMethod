@@ -172,8 +172,8 @@ PHONY += debug-memory
 debug-memory :
 	export MALLOC_TRACE=memory.log
 	@$(MAKE) OPTIONS=-d
-	./pvschema ini.dat
-	mtrace pvschema $(MALLOC_TRACE)
+	./arch/pvschema ini.dat
+	mtrace arch/pvschema $(MALLOC_TRACE)
 
 #===============================================================================
 
