@@ -12,7 +12,7 @@ gridType interpol_points(int dim_space,float *first,float *last);
 
 int *find_position(int dim_space, float *g, float *first, float *step);
 
-float *find_point(int dim_space,int *index, gridType g);
+float *find_point(int dim_space,int *index, gridType g, float *point);
 
 int **find_index_region(float *g, int dim_space, float *first, float *step);
 

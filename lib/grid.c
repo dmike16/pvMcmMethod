@@ -102,15 +102,15 @@ int
 }
 
 float
-*find_point(int dim_space,int *index, gridType g)
+*find_point(int dim_space,int *index, gridType g, float *point)
 {
 	register int i;
-	float *point = malloc(dim_space*sizeof(float));
+	float *vpoint = point;
 
 	for (i = 0; i < dim_space; i++)
-		point[i] = g[i]->nod[index[i]];
+		vpoint[i] = g[i]->nod[index[i]];
 
-	return point;
+	return vpoint;
 }
 
 float
@@ -120,8 +120,10 @@ float
 	int num_vertex = (int) powf(2,dim_space);
 	float **g_reg = malloc(num_vertex*sizeof(float*));
 
-	for (i = 0; i < num_vertex; i++)
-		g_reg[i] = find_point(dim_space,index[i],g);
+	for (i = 0; i < num_vertex; i++){
+	  g_reg[i] = malloc(dim_space*sizeof(float));
+	  g_reg[i] = find_point(dim_space,index[i],g,g_reg[i]);
+	}
 	
 	return g_reg;
 }
