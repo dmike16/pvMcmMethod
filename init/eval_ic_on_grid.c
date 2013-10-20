@@ -30,27 +30,32 @@ static int
 
 
 float 
-*eval_ic_on_grid(int dim_space, int dim_nod, gridType g_nod, 
+*eval_ic_on_grid(int grid_size,int dim_space, int dim_nod, gridType g_nod, 
 		 float (*f)(int,float*))
 {
   register int i,j;
 
-  int grid_size = (int) pow(dim_nod,dim_space);
   int *index;
   float *nod_values,*point;
   
   index = init_index(dim_space);
-  nod_values = (float*)malloc(grid_size*sizeof(float));
+  nod_values = malloc(grid_size*sizeof(float));
 
   if(nod_values == NULL){
     fprintf(stdout,"Error in allocate memory\n");
     abort();
   }
 
+  point = malloc(dim_space*sizeof(float));
+
+  if(point == NULL){
+    fprintf(stdout,"Error in allocate memory\n");
+    abort();
+  }
+  
   for(i = 0; i < grid_size; i++){
-    point = find_point(dim_space,index,g_nod);
+    point = find_point(dim_space,index,g_nod,point);
     nod_values[i] = f(dim_space,point);
-    free((void*)(point));
     for(j = 1; j < dim_space; j++)
       if(index[dim_space-j] == dim_nod-1){
 	index[dim_space-j] = 0;
@@ -62,6 +67,7 @@ float
 	break;}
   }
 
+  free((void*)(point));
   free((void*)index);
 
   return nod_values;
