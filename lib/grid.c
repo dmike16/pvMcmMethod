@@ -37,7 +37,7 @@ init_grid(int dim_space)
 }
 
 gridType
-create_grid(const int dim_nod,const int dim_space,const float *first,
+create_grid(int dim_nod, int dim_space,const float *first,
 		const float *step)
 {
 	register int i,j;
@@ -45,10 +45,10 @@ create_grid(const int dim_nod,const int dim_space,const float *first,
 
 
 	for(i = 0; i < dim_space; i++){
-	  g[i] =(struct axes_nod*) malloc(sizeof(struct axes_nod));
+	  g[i] = malloc(sizeof(struct axes_nod));
 	  check(g[i],"Error in create grid.");
 	  g[i]->dim = dim_nod;
-	  g[i]->nod = (float*)malloc(dim_nod*sizeof(float));
+	  g[i]->nod = malloc(dim_nod*sizeof(float));
 	  check(g[i]->nod,"Error in create nodes partition");
 	  for( j = 0; j < dim_nod; j++)
 	    g[i]->nod[j] = first[i] + step[i]*j;
@@ -57,7 +57,7 @@ create_grid(const int dim_nod,const int dim_space,const float *first,
 	return g;
 }
 
-gridType
+/*gridType
 interpol_points(int dim_space,float *first,float *last)
 {
 	register int i,j;
@@ -88,9 +88,9 @@ interpol_points(int dim_space,float *first,float *last)
 
 	return g_plus;
 }
-
+*/
 int 
-*find_position(int dim_space,float *g,float *first,float *step)
+*find_position(int dim_space,const float *g,const float *first,const float *step)
 {
 	register int i;
 	int *index = malloc(dim_space*sizeof(int));
@@ -102,7 +102,7 @@ int
 }
 
 float
-*find_point(int dim_space,int *index, gridType g, float *point)
+*find_point(int dim_space,const int *index, gridType g, float *point)
 {
 	register int i;
 	float *vpoint = point;
@@ -114,14 +114,20 @@ float
 }
 
 float
-**find_region_grid(int dim_space,gridType g,int **index)
+**find_region_grid(int dim_space,gridType g,const int **index)
 {
 	register int i;
-	int num_vertex = (int) powf(2,dim_space);
-	float **g_reg = malloc(num_vertex*sizeof(float*));
+	int num_vertex = (int) pow(2,dim_space);
+	float **g_reg;
+
+	
+	if((g_reg = malloc(num_vertex*sizeof(float*))) == NULL)
+	   fprintf(stdout,"**ERROR IN ALLOCATE MEMORY\n");
+	
 
 	for (i = 0; i < num_vertex; i++){
 	  g_reg[i] = malloc(dim_space*sizeof(float));
+	  check(g_reg[i],"**Error during allocaton of memory \n");
 	  g_reg[i] = find_point(dim_space,index[i],g,g_reg[i]);
 	}
 	
@@ -129,8 +135,8 @@ float
 }
 
 int
-**find_index_region(float *g, int dim_space, float *first, 
-		float *step)
+**find_index_region(const float *g, int dim_space, const float *first, 
+		    const float *step)
 {
   register int i,j,mv_ = 0,mv_up = 1,mv_tmp = 0,i_tmp = 0,i_up,flag;
   int num_vertex = (int) powf(2,dim_space);
@@ -141,6 +147,7 @@ int
   
   for (i = 1; i < num_vertex; i++){
     index[i] = malloc(dim_space*sizeof(int));
+    check(index[i],"**Error during allocaton of memory \n");
     if(mv_tmp != 0){
       i_tmp = i_up;
       if (flag == 4){
@@ -168,10 +175,26 @@ int
       mv_tmp++;
     else
       mv_tmp--;
-	}
+  }
   
   return index;
 }
+
+int
+output_axes_nod(gridType g, int dim_space, FILE *xog)
+{
+  register int i,j;
+  int char_numb = 0;
+  
+  for(i = 0; i < g[0]->dim; i++){
+    for(j = 0; j < dim_space; j++)
+      char_numb = fprintf(xog,"%.5f    ",g[j]->nod[i]);
+    char_numb = fprintf(xog,"\n");
+  }
+
+  return char_numb;
+}
+
 
 void 
 clear_grid (gridType g,int dim_space)

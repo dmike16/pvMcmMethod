@@ -5,21 +5,26 @@
 
 typedef struct axes_nod **gridType;
 
-gridType create_grid(const int dim_nod,const int dim_space, 
-		     const float *first, const float *step);
+extern gridType create_grid( int dim_nod, int dim_space, 
+		      const float *first,const float *step);
 
-gridType interpol_points(int dim_space,float *first,float *last);
+//gridType interpol_points(int dim_space,float *first,float *last);
 
-int *find_position(int dim_space, float *g, float *first, float *step);
+extern int *find_position(int dim_space, const float *g, const float *first,
+			  const float *step);
 
-float *find_point(int dim_space,int *index, gridType g, float *point);
+extern float *find_point(int dim_space, const int *index, gridType g,
+			 float *point);
 
-int **find_index_region(float *g, int dim_space, float *first, float *step);
+extern int **find_index_region(const float *g, int dim_space, 
+			       const float *first, const float *step);
 
-float **find_region_grid(int dim_space, gridType g, int **index);
+extern float **find_region_grid(int dim_space, gridType g,const int **index);
 
-void clear_index(void **p, int dim_space);
+extern int output_axes_nod(gridType g, int dim_space,FILE *xog);
 
-void clear_grid(gridType g,int dim_space);
+extern void clear_index(void **p, int dim_space);
+
+extern void clear_grid(gridType g,int dim_space);
 
 #endif

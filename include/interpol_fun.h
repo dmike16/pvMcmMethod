@@ -3,11 +3,12 @@
 
 #define P1(a0,a1,y0,y1) (a0)*(y0)-(a1)*(y1)
 
-float interpol_fun(int dim_space,gridType g_nod, float *g_point,
-		    float *first,float *step,float(*f)(int,float*));
+extern float interpol_fun(int dim_space,gridType g_nod, const float *g_point,
+			  const float *first,
+			  const float *step, float(*f)(int,const float*));
 
-float interpol_fun_discrete(int dim_space,int dim_nod,gridType g_nod,
-			    float *g_point,float *first,float *step, 
-			    float *nod_values);
+extern float interpol_fun_discrete(int dim_space,int dim_nod,gridType g_nod,
+				   const float *g_point, const float *first,
+				   const float *step, const float *nod_values);
 
 #endif

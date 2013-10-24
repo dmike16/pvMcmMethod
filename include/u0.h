@@ -4,9 +4,9 @@
 #include <math.h>
 
 inline float 
-u_0(int n,float *point)
+u_0(int n, const float *point)
 {
-  float *p;
+  const float *p;
   float u = 0.00f;
   
   
