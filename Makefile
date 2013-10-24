@@ -71,7 +71,7 @@ $(srctree)/scripts/Kbuild.include: ;
 include $(srctree)/scripts/Kbuild.include
 
 CC		= gcc
-CFLAGS		= -W -Wall -Wmissing-prototypes -O3 -pedantic -ansi -std=gnu99
+CFLAGS		= -O2 -W -Wall -pedantic -ansi -std=gnu99
 AR		= ar
 LD		= ld
 MKDIR		= mkdir
@@ -170,10 +170,9 @@ help:
 PHONY += debug-memory
 
 debug-memory :
-	export MALLOC_TRACE=memory.log
 	@$(MAKE) OPTIONS=-d
-	./arch/pvschema ini.dat
-	mtrace arch/pvschema $(MALLOC_TRACE)
+	export MALLOC_TRACE=memory.log
+	./arch/pvschema ini.dat && mtrace arch/pvschema $$MALLOC_TRACE
 
 #===============================================================================
 

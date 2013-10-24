@@ -12,14 +12,14 @@ obj-y		:=
 lib-y		:=
 target		:=
 subdir-y	:=
-ccflags-y	:=
+cflags-y	:=
 
 define make-depend
   $(CC) -MM       \
         -MF $3    \
         -MP       \
         -MT $2    \
-        $(ccflags) \
+        $(cflags-y) \
         $1 
 endef
 
@@ -58,7 +58,7 @@ cmd_dep_c_h = $(call make-depend,$<,$@,$(subst .o,.d,$@))
 #------------------------------------------------------------------------------
 
 quiet_cmd_cc_o_c = CC	$@
-cmd_cc_o_c = $(CC) $(ccflags) -c -o $@ $<
+cmd_cc_o_c = $(CC) $(cflags-y) -c -o $@ $<
 
 define rule_cc_o_c
        $(call cmd,dep_c_h)

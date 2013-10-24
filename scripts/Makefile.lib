@@ -1,5 +1,5 @@
 # Backward compatibility
-ccflags += $(CFLAGS) $(LINUXINCLUDE)
+cflags-y += $(CFLAGS) $(LINUXINCLUDE)
 
 # Libraries ara always collected in one lib file.
 # Filter out objects already built-in
