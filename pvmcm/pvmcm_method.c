@@ -15,7 +15,6 @@
 
 #define DIM_SPACE  3
 #define NUM_VEC    2
-#define TOL        10E-03
 #define _step(x)   sqrt(2.0f*(x))
 #define _z_dim(x)  (x)*(x)
 #define _y_dim(x)  (x)        
@@ -127,14 +126,14 @@ eval_direction_vector(const float Du[],float ni[][NUM_VEC])
 {
   
   // Define vector ni_1
-  ni[0][0] = -Du[2]/(p1p3(Du)+TOL);
+  ni[0][0] = -Du[2]/p1p3(Du);
   ni[1][0] = 0;
-  ni[2][0] = Du[1]/(p1p3(Du)+TOL);
+  ni[2][0] = Du[0]/p1p3(Du);
 
   // Define vector n1_2
-  ni[0][1] = -(Du[0]*Du[1])/(norm_R3(Du)*p1p3(Du)+TOL);
-  ni[1][1] = p1p3(Du)/(norm_R3(Du)+TOL);
-  ni[2][1] = -(Du[1]*Du[2])/(norm_R3(Du)*p1p3(Du)+TOL);
+  ni[0][1] = -(Du[0]*Du[1])/(norm_R3(Du)*p1p3(Du));
+  ni[1][1] = p1p3(Du)/norm_R3(Du);
+  ni[2][1] = -(Du[1]*Du[2])/(norm_R3(Du)*p1p3(Du));
 
 }
 
@@ -152,7 +151,7 @@ out_of_boundary_check(const float *first,const float *last, float pt[])
 }
 
 static inline float
-mcm_iteraction(const int index[], float ni[][NUM_VEC], const float *u_n,
+mcm_above_threshold(const int index[], float ni[][NUM_VEC], const float *u_n,
 	       float delta_t,const float *step,const float *first,
 	       const float *last,int dim_nod, gridType g_nod)
 {
@@ -162,8 +161,8 @@ mcm_iteraction(const int index[], float ni[][NUM_VEC], const float *u_n,
 
 
   float I_n_point[DIM_SPACE];
-  float rho = sqrt(2.00f*delta_t);
-  float u_mcm = 0;
+  float rho = sqrt(2.0f*delta_t);
+  float u_mcm = 0.0f;
   
   //Direction (+ni1 +ni2)
   I_n_point[0] = x[0]+rho*(ni[0][0]+ni[0][1]);
@@ -200,6 +199,44 @@ mcm_iteraction(const int index[], float ni[][NUM_VEC], const float *u_n,
  }
 
 
+static inline float 
+mcm_below_threshold(int index[], int dim_nod, const float *u_n)
+{
+
+  register int i;
+  int IF;
+  float u_mcm = 0.0f;
+
+  for(i = 0; i < DIM_SPACE; i++){
+    ++index[i];
+    if(index[i] > dim_nod-1){
+      --index[i];
+      IF = index_full(dim_nod,index);
+    }
+    else{
+      IF = index_full(dim_nod,index);
+      --index[i];
+    }
+    u_mcm += u_n[IF];
+
+    --index[i];
+    if(index[i] < 0){
+      ++index[i];
+      IF = index_full(dim_nod,index);
+    }
+    else{
+      IF = index_full(dim_nod,index);
+      ++index[i];
+    }
+    u_mcm += u_n[IF];
+  }
+
+  u_mcm = u_mcm/6.0f;
+  
+  return u_mcm;
+
+}
+
 void 
 pvschema_core(int dim_space,int grid_size,int dim_nod,float *u_n_plus_one, 
 	      const float *u_n, const float *step,float delta_t,
@@ -219,9 +256,13 @@ pvschema_core(int dim_space,int grid_size,int dim_nod,float *u_n_plus_one,
   for(i = 0; i < grid_size; i++){
     index_split(i,index,dim_nod);
     eval_gradient(dim_nod,index,Du,u_n,step[0]);
-    eval_direction_vector(Du,ni);
-    u_n_plus_one[i] = mcm_iteraction(index,ni,u_n,delta_t,step,first,
-				     last,dim_nod,g_nod);
-  
+    if(norm_R3(Du) <= step[0] || p1p3(Du) <= step[0])
+      u_n_plus_one[i] = mcm_below_threshold(index,dim_nod,u_n);
+    else
+      { 
+	eval_direction_vector(Du,ni);
+	u_n_plus_one[i] = mcm_above_threshold(index,ni,u_n,delta_t,step,first,
+					      last,dim_nod,g_nod);
+      }
   }
 }
