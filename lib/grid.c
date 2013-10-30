@@ -181,17 +181,20 @@ int
 }
 
 int
-output_axes_nod(gridType g, int dim_space, FILE *xog)
+output_axes_nod(gridType g, int dim_space, char *filename)
 {
   register int i,j;
   int char_numb = 0;
+  FILE *xog;
+
+  xog = fopen(filename,"w");
   
   for(i = 0; i < g[0]->dim; i++){
     for(j = 0; j < dim_space; j++)
-      char_numb = fprintf(xog,"%.5f    ",g[j]->nod[i]);
+      char_numb = fprintf(xog,"%.6f    ",g[j]->nod[i]);
     char_numb = fprintf(xog,"\n");
   }
-
+  fclose(xog);					
   return char_numb;
 }
 

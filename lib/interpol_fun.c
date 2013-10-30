@@ -56,7 +56,7 @@ interpol_linear_tree(int dim_space, int num_vertex,const float *g_point,
 	(point[j][dim_flag-1]-point[j+mv_][dim_flag-1]);
       
       a1 = (g_point[dim_flag-1]-point[j][dim_flag-1])/
-	(point[j][dim_flag-1]-point[j+mv_][dim_flag-1]);
+	(point[j+mv_][dim_flag-1]-point[j][dim_flag-1]);
       
       // Value get out from interpol linear
       tmp_value[k] = P1(a0,a1,point_value[l],point_value[l+1]);

@@ -21,7 +21,7 @@ extern int **find_index_region(const float *g, int dim_space,
 
 extern float **find_region_grid(int dim_space, gridType g,const int **index);
 
-extern int output_axes_nod(gridType g, int dim_space,FILE *xog);
+extern int output_axes_nod(gridType g, int dim_space,char *filename);
 
 extern void clear_index(void **p, int dim_space);
 

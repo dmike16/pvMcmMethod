@@ -28,11 +28,10 @@
 #define _check_time(a,b) if((a) > (b))(a)=(b)
 
 static int
-make_output_file(gridType g_nod,const float *buffer, char *name, 
-		 int dimension,int dim_space)
+make_output_file(const float *buffer, char *name,int dimension)
 {
   int i;
-  int fd,df;
+  int fd;
   int char_numb = 0;
 
   fd = open (name,O_WRONLY | O_CREAT | O_TRUNC,0666);
@@ -45,17 +44,10 @@ make_output_file(gridType g_nod,const float *buffer, char *name,
   FILE *arg = fdopen(fd,"w");
   
    for(i = 0; i < dimension; ++i)
-     char_numb = fprintf(arg,"%.5f\n",buffer[i]);
+     char_numb = fprintf(arg,"%.6f\n",buffer[i]);
 
   fclose(arg);
-
-  df = open("arch/axesNodes.dat",O_WRONLY | O_CREAT | O_TRUNC,0666);
-  FILE *xog = fdopen(df,"w");
-  if((output_axes_nod(g_nod,dim_space,xog)) == -1){
-    perror("output_axes_nod");
-    return 1;
-  }
-  fclose(xog);
+  
   return char_numb;
 
 }
@@ -150,27 +142,25 @@ main(int argc, char *argv[])
   u_n = vector_copy(nod_values,u_n,grid_size);
   fprintf(stdout,"grid_size %d\n",grid_size);
   
+  output_axes_nod(g_nod,dim_space,"arch/axesNodes.dat");
+  make_output_file(u_n,"arch/IC.dat",grid_size);
+    
   i = 0;
-  for(;;){
-    if(timeto == 0){
-      make_output_file(g_nod,u_n,"arch/IC.dat",grid_size,dim_space);
-      break;
-    }
+  for(;timeto;){
     fprintf(stdout,".");
     fflush(stdout);
-    pvschema_core(dim_space,grid_size,dim_nod,u_n_plus_one,u_n,
-		  step,delta_t,g_nod,first,last);
     time += delta_t;
     _check_time(time,timeto);
     ++i;
+    pvschema_core(dim_space,grid_size,dim_nod,u_n_plus_one,u_n,
+		  step,delta_t,g_nod,first,last);
     if (fabs(timeto-time) <= TOL){
       char *default_name;
       if(argc == 2)
 	default_name = "arch/dflMCMsolution.dat";
       else
 	default_name = argv[2];
-      if((make_output_file(g_nod,u_n_plus_one,default_name,
-			   grid_size,dim_space)) != -1)
+      if((make_output_file(u_n_plus_one,default_name,grid_size)) != -1)
 	{
 	  fprintf(stdout,"\nTempo %.2f reached in %d iter\n",timeto,i);
 	  fprintf(stdout,"FILE CREATED \n");

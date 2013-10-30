@@ -12,9 +12,8 @@ u_0(int n, const float *point)
   
   for (p = point; p <point + n; p++)
     u += (*p)*(*p); 
-  if (sqrt(u) <= 1)
-    return 1.0f-u;
-  
+  if (sqrt(u) <= 1.0f)
+    return (1.0f-u);
   else 
     return 0.0f;
   
