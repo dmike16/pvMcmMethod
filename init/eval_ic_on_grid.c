@@ -31,7 +31,7 @@ static int
 
 float 
 *eval_ic_on_grid(int grid_size,int dim_space, int dim_nod, gridType g_nod, 
-		 float (*f)(int,const float*))
+		 float (*f)(int,const float*,float),float radius)
 {
   register int i,j;
 
@@ -55,7 +55,7 @@ float
   
   for(i = 0; i < grid_size; i++){
     point = find_point(dim_space,index,g_nod,point);
-    nod_values[i] = f(dim_space,point);
+    nod_values[i] = f(dim_space,point,radius);
     for(j = 0; j < dim_space; j++)
       if(index[j] == dim_nod-1)
 	index[j] = 0;

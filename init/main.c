@@ -66,7 +66,7 @@ main(int argc, char *argv[])
   int dim_nod;
   int dim_space;
   float *first,*last,*step;
-  float *nod_values,timeto;
+  float *nod_values,timeto,radius;
 
   // Check the correct usage of the programm	
   if (argc != 2 && argc != 3){
@@ -95,6 +95,8 @@ main(int argc, char *argv[])
   dim_space = atoi(tmp);
   tmp = strtok(NULL, "\n");
   dim_nod = atoi(tmp);
+  tmp = strtok(NULL,"\n");
+  radius = atof(tmp);
   first = (float*) malloc(dim_space*sizeof(float));
   last = (float*) malloc(dim_space*sizeof(float));
   for (i = 0; (tmp = strtok(NULL, "\n")) != NULL ;i++){
@@ -119,13 +121,15 @@ main(int argc, char *argv[])
 	    "DeltaX=%.2f\n",i+1,first[i],last[i],step[i]);
   fprintf(stdout,"TIMEOUT = %.2f\n",timeto);
   fprintf(stdout,"**********************************\n");
+  fprintf(stdout,"Initial Condition (IC): paraboloide with radius %.2f\n",radius);
   
   // Create the grid in R^n
   int grid_size = (int) pow(dim_nod,dim_space); 
   g_nod = create_grid(dim_nod,dim_space,first,step);
-  
+  fprintf(stdout,"Grid Size: %d\n",grid_size);
+
   // Eval initial func on grid points	
-  nod_values = eval_ic_on_grid(grid_size,dim_space,dim_nod,g_nod,u_0);
+  nod_values = eval_ic_on_grid(grid_size,dim_space,dim_nod,g_nod,u_0,radius);
   
   // Install handler for SIGDIM
   struct sigaction sa;
@@ -140,10 +144,12 @@ main(int argc, char *argv[])
   float *u_n = malloc(grid_size*sizeof(float));
   
   u_n = vector_copy(nod_values,u_n,grid_size);
-  fprintf(stdout,"grid_size %d\n",grid_size);
+  
   
   output_axes_nod(g_nod,dim_space,"arch/axesNodes.dat");
+  fprintf(stdout," FILE CREATED \n");
   make_output_file(u_n,"arch/IC.dat",grid_size);
+  fprintf(stdout," FILE CREATED \n");
     
   i = 0;
   for(;timeto;){
