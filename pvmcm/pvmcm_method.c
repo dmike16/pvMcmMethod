@@ -15,7 +15,7 @@
 
 #define DIM_SPACE  3
 #define NUM_VEC    2
-#define TOL        10E-06
+#define TOL        10E-03
 #define _step(x)   sqrt(2.0f*(x))
 #define _z_dim(x)  (x)*(x)
 #define _y_dim(x)  (x)        
@@ -92,23 +92,27 @@ static inline float
     //  Approximation with finite diff centered :
     //    .) go up
     ++index[i];
-    if(index[i] > 99)
+    if(index[i] > dim_nod-1){
       --index[i];
-    IF = index_full(dim_nod,index);
+      IF = index_full(dim_nod,index);
+    }
+    else{
+      IF = index_full(dim_nod,index);
+      --index[i];
+    }  
     du_up = func[IF];
-
-    //    .) go back to input value
-    --index[i]; 
 
     //    .) go down
     --index[i];
-    if(index[i] < 0)
+    if(index[i] < 0){
       ++index[i];
-    IF = index_full(dim_nod,index);
+      IF = index_full(dim_nod,index);
+    }
+    else {
+      IF = index_full(dim_nod,index);
+      ++index[i];
+    }
     du_down = func[IF];
-
-    //      .) go back to input value
-    ++index[i];
 
     //Initialize Du
     Du_tmp[i] = (du_up-du_down)/(2.0f*delta_x);
@@ -189,12 +193,11 @@ mcm_iteraction(const int index[], float ni[][NUM_VEC], const float *u_n,
   out_of_boundary_check(first,last,I_n_point);
   u_mcm += interpol_fun_discrete(DIM_SPACE,dim_nod,g_nod,I_n_point,
 				 first,step,u_n);
-
-  u_mcm = 0.25f*u_mcm;
+  u_mcm = (u_mcm)*(0.25f);
 
   return u_mcm;
 
-}
+ }
 
 
 void 
