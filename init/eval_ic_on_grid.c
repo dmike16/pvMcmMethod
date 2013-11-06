@@ -16,7 +16,7 @@ static int
 
   int *index;
 
-  if((index = (int*)malloc(dim_space*sizeof(int))) == NULL){
+  if((index = malloc(dim_space*sizeof(int))) == NULL){
     fprintf(stdout,"**************************************\n");
     fprintf(stdout," Error in allocate memory             \n");
     abort();
@@ -64,8 +64,8 @@ float
 	break;}
   }
 
-  free((void*)(point));
-  free((void*)index);
+  free(point);
+  free(index);
 
   return nod_values;
 }

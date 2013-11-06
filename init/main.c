@@ -18,8 +18,10 @@
 #include <signal.h>
 #include "grid.h"
 #include "u0.h"
+#include "u_sphere.h"
 #include "interpol_fun.h"
 #include "eval_ic_on_grid.h"
+#include "eval_method_errno.h"
 #include "signal_dim.h"
 #include "pvschema_core.h"
 #include "vector_copy.h"
@@ -27,13 +29,21 @@
 #define TOL 10E-07
 #define _NLS 36
 #define _check_time(a,b) if((a) > (b))(a)=(b)
-#define _digits(x,y,_x)				\
-  _x = x;  	     \
+
+#define _digits(x,y,k)				\
+  k = x;  	     \
   y = 0;	     \
   do{   	     \
   ++y;               \
-  }while(((_x)/=10))
+  }while((int)(k/=10))
 
+#define _allocate_error(x)                                             \
+do{                                                                    \
+  if(x == NULL){                                                       \
+    fprintf(stderr,"Error in allocate memory: %s\n",strerror(errno));  \
+    exit(1);}                                                          \
+ }while(0)
+  
 static int
 make_output_file(const float *buffer, char *name,int dimension)
 {
@@ -44,7 +54,7 @@ make_output_file(const float *buffer, char *name,int dimension)
   fd = open (name,O_WRONLY | O_CREAT | O_TRUNC,0666);
 
   if(fd == -1){
-    perror("open");
+    fprintf(stderr,"Erro in open file: %s\n",strerror(errno));
     return 1;
   }
 
@@ -68,6 +78,7 @@ autogenerate_octave_script(char *default_name,int dim_nod,
   struct iovec vec[_NLS];
   struct iovec *vec_next;
 
+ 
   vec_next = vec;
 
 
@@ -91,12 +102,15 @@ autogenerate_octave_script(char *default_name,int dim_nod,
   char *range;
   char *cycle_for;
   int nd,tmp;
+  
  
   _digits(dim_nod,nd,tmp);
-  range = malloc((nd+1)*sizeof(char)); 
+   range = malloc((nd+1)*sizeof(char)); 
+  _allocate_error(range);
   sprintf(range,"%d",dim_nod);
   
-  cycle_for = malloc((9+strlen(range)+1)*sizeof(char));
+  cycle_for = malloc((9+nd+1)*sizeof(char));
+  _allocate_error(cycle_for);
   strcpy(cycle_for,"for i=1:");
   strcat(cycle_for,range);
   strcat(cycle_for,"\n");
@@ -125,7 +139,8 @@ autogenerate_octave_script(char *default_name,int dim_nod,
   ++vec_next;
 
  char *_open_2;
- _open_2 = malloc((55+strlen(default_name))*sizeof(char));
+ _open_2 = malloc((55+strlen(default_name)+1)*sizeof(char));
+ _allocate_error(_open_2);
  strcpy(_open_2,"f2=fopen(\"/home/dmiky/Documenti/lavori_C_Cpp/tesi/");
  strcat(_open_2,default_name);
  strcat(_open_2,"\");\n");
@@ -144,7 +159,8 @@ autogenerate_octave_script(char *default_name,int dim_nod,
 
   char *cycle_for_j;
 
-  cycle_for_j = malloc((11+strlen(range)+1)*sizeof(char));
+  cycle_for_j = malloc((11+nd+1)*sizeof(char));
+  _allocate_error(cycle_for_j);
   strcpy(cycle_for_j,"  for j=1:");
   strcat(cycle_for_j,range);
   strcat(cycle_for_j,"\n");
@@ -154,7 +170,8 @@ autogenerate_octave_script(char *default_name,int dim_nod,
 
   char *cycle_for_k;
 
-  cycle_for_k = malloc((13+strlen(range)+1)*sizeof(char));
+  cycle_for_k = malloc((13+nd+1)*sizeof(char));
+  _allocate_error(cycle_for_k);
   strcpy(cycle_for_k,"    for k=1:");
   strcat(cycle_for_k,range);
   strcat(cycle_for_k,"\n");
@@ -207,12 +224,15 @@ autogenerate_octave_script(char *default_name,int dim_nod,
 
   _digits((int)first[0],nd,tmp);
   first_axis = malloc((nd+2)*sizeof(char));
+  _allocate_error(first_axis);
   sprintf(first_axis,"%d",(int)first[0]);
   _digits((int)last[0],nd,tmp);
   last_axis = malloc((nd+2)*sizeof(char));
+  _allocate_error(last_axis);
   sprintf(last_axis,"%d",(int)last[0]);
 
-  axis = malloc((16+strlen(first_axis)+strlen(last_axis))*sizeof(char));
+  axis = malloc((15+dim_space*(strlen(first_axis)+strlen(last_axis))+1)*sizeof(char));
+  _allocate_error(axis);
 
   strcpy(axis,"axis([");
   for(i = 0; i < dim_space; i++){
@@ -244,7 +264,7 @@ autogenerate_octave_script(char *default_name,int dim_nod,
   vec_next->iov_base = "figure()\n";
   vec_next->iov_len = 9;
   ++vec_next;
-    
+
   vec_next->iov_base = axis;
   vec_next->iov_len = strlen(axis);
   ++vec_next;
@@ -272,30 +292,33 @@ autogenerate_octave_script(char *default_name,int dim_nod,
   ++vec_next;
 
   fd = open("scripts/plotSurface.m", O_WRONLY | O_CREAT | O_TRUNC, 0666);
-  if(writev(fd,vec,_NLS) == -1){
+  size_t byte_wrote;
+
+  byte_wrote = writev(fd,vec,_NLS);
+  if((int)byte_wrote == -1){
     free(_open_2);
     free(cycle_for);
     free(cycle_for_j);
     free(cycle_for_k);
-    free(range);
     free(axis);
-    free(first_axis);
-    free(last_axis);
     close(fd);
     fprintf(stdout,"ERROR in CREAT OCTAVE SCRIPT\n");
     exit(1);}
 
+  close(fd); 
+
+  free(range);
+  free(first_axis);
+  free(last_axis);  
   free(_open_2);
   free(cycle_for);
   free(cycle_for_j);
   free(cycle_for_k);
-  free(range);
   free(axis);
-  free(first_axis);
-  free(last_axis);
-  close(fd);
-
+  
 }
+
+float time;
 
 int 
 main(int argc, char *argv[])
@@ -353,7 +376,7 @@ main(int argc, char *argv[])
   
   step = malloc(dim_space*sizeof(float));
   for (i = 0; i < dim_space; i++)
-    step[i] = (last[i] - first[i])/(dim_nod - 1.00f);
+    step[i] = (last[i] - first[i])/(dim_nod- 1.00f);
 	
   // Print the values read from file
   fprintf(stdout,"********************************\n");
@@ -383,7 +406,6 @@ main(int argc, char *argv[])
   
   // MCM method	
   float delta_t=step[0];
-  float time = 0.0f;
   float *u_n_plus_one = malloc(grid_size*sizeof(float));
   float *u_n = malloc(grid_size*sizeof(float));
   char *default_name = NULL; 
@@ -397,14 +419,15 @@ main(int argc, char *argv[])
   fprintf(stdout," FILE CREATED \n");
     
   i = 0;
+  time = 0.00f;
   for(;timeto;){
     fprintf(stdout,".");
     fflush(stdout);
-    time += delta_t;
-    _check_time(time,timeto);
     ++i;
     pvschema_core(dim_space,grid_size,dim_nod,u_n_plus_one,u_n,
 		  step,delta_t,g_nod,first,last);
+    time += delta_t;
+    _check_time(time,timeto);
     if (fabs(timeto-time) <= TOL){
       if(argc == 2)
 	default_name = "arch/dflMCMsolution.dat";
@@ -422,8 +445,18 @@ main(int argc, char *argv[])
     u_n = vector_copy(u_n_plus_one,u_n,grid_size);
   }
 
-  //Generata octave script in order to plot the solution
-  autogenerate_octave_script(default_name,dim_nod,first,last,dim_space);     
+  //Generate octave script in order to plot the solution
+  autogenerate_octave_script(default_name,dim_nod,first,last,dim_space);
+  fprintf(stdout,"Script generated, into Dir \"scripts\"\n"); 
+
+  //Eval the Norm infinity of the Error
+  float *u_exact;
+
+  time = timeto;
+
+  fprintf(stdout,"Time to eval : %f\n",time);
+  u_exact = eval_ic_on_grid(grid_size,dim_space,dim_nod,g_nod,u_sphere,radius);
+  eval_method_errno(u_n_plus_one,u_exact,grid_size);
   
   // Clean Allocated Memory
   clear_grid(g_nod,dim_space);
@@ -433,6 +466,7 @@ main(int argc, char *argv[])
   free(nod_values);
   free(u_n);
   free(u_n_plus_one);
+  free(u_exact);
     
   return 0;
   

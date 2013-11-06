@@ -15,7 +15,7 @@ static float
 {
   register int i;
 
-  if((point_value = (float*)realloc((void*)point_value,num_P1*sizeof(float))) == NULL)
+  if((point_value = realloc(point_value,num_P1*sizeof(float))) == NULL)
     {
       fprintf(stdout,"Error in realloc\n");
       abort();
@@ -70,12 +70,12 @@ interpol_linear_tree(int dim_space, int num_vertex,const float *g_point,
     if(num_P1 == 0)continue;
     add_ = num_vertex/num_P1;
     mv_ = add_/2;
-    tmp_value = (float*)realloc((void*)tmp_value, num_P1*sizeof(float));
+    tmp_value = realloc(tmp_value, num_P1*sizeof(float));
   }while (dim_flag <= dim_space);
 
   new_value = *point_value;
 
-  free((void*)tmp_value);
+  free(tmp_value);
 
   return new_value;
 
@@ -170,7 +170,7 @@ interpol_fun_discrete(int dim_space,int dim_nod,gridType g_nod,
   new_value = interpol_linear_tree(dim_space,num_vertex,g_point,
 				   (const float **)point,point_value);    
 
-  free((void*)point_value);
+  free(point_value);
   clear_index((void**)point,dim_space);
   clear_index((void**)index,dim_space);
   

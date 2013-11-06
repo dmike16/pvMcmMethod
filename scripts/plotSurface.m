@@ -2,7 +2,7 @@
 % Don't change it
 clear
 f1 = fopen("/home/dmiky/Documenti/lavori_C_Cpp/tesi/arch/axesNodes.dat");
-for i=1:80
+for i=1:20
   x(i)=fscanf(f1,"%f",1);
   y(i)=fscanf(f1,"%f",1);
   z(i)=fscanf(f1,"%f",1);
@@ -10,9 +10,9 @@ end
 fclose(f1);
 f2=fopen("/home/dmiky/Documenti/lavori_C_Cpp/tesi/arch/dflMCMsolution.dat");
 f3 = fopen("/home/dmiky/Documenti/lavori_C_Cpp/tesi/arch/IC.dat");
-for i=1:80
-  for j=1:80
-    for k=1:80
+for i=1:20
+  for j=1:20
+    for k=1:20
       v(j,k,i)=fscanf(f2,"%f",1);
       u(j,k,i)=fscanf(f3,"%f",1);
     end
