@@ -13,6 +13,8 @@
 #include "pvschema_core.h"
 #include "signal_dim.h"
 
+#define true       1
+#define false      0
 #define DIM_SPACE  3
 #define NUM_VEC    2
 #define _step(x)   sqrt(2.0f*(x))
@@ -25,6 +27,8 @@
       var -= cond;              \
       add++;	                \
   } while(var >= cond)
+
+typedef int bool;
 
 static inline int
 index_full(int dim_nod,int index[])
@@ -91,26 +95,16 @@ static inline float
     //  Approximation with finite diff centered :
     //    .) go up
     ++index[i];
-    if(index[i] > dim_nod-1){
-      --index[i];
-      IF = index_full(dim_nod,index);
-    }
-    else{
-      IF = index_full(dim_nod,index);
-      --index[i];
-    }  
+    IF = index_full(dim_nod,index);
+    --index[i];
+    
     du_up = func[IF];
-
+    
     //    .) go down
     --index[i];
-    if(index[i] < 0){
-      ++index[i];
-      IF = index_full(dim_nod,index);
-    }
-    else {
-      IF = index_full(dim_nod,index);
-      ++index[i];
-    }
+    IF = index_full(dim_nod,index);
+    ++index[i];
+    
     du_down = func[IF];
 
     //Initialize Du
@@ -209,31 +203,39 @@ mcm_below_threshold(int index[], int dim_nod, const float *u_n)
 
   for(i = 0; i < DIM_SPACE; i++){
     ++index[i];
-    if(index[i] > dim_nod-1){
-      --index[i];
-      IF = index_full(dim_nod,index);
-    }
-    else{
-      IF = index_full(dim_nod,index);
-      --index[i];
-    }
+    IF = index_full(dim_nod,index);
+    --index[i];
+    
     u_mcm += u_n[IF];
 
     --index[i];
-    if(index[i] < 0){
-      ++index[i];
-      IF = index_full(dim_nod,index);
-    }
-    else{
-      IF = index_full(dim_nod,index);
-      ++index[i];
-    }
+    IF = index_full(dim_nod,index);
+    ++index[i];
+    
     u_mcm += u_n[IF];
   }
 
   u_mcm = u_mcm/6.0f;
   
   return u_mcm;
+
+}
+
+static bool
+here_boundary(int dim_nod,int *index)
+{
+  register int i,nb_in = 0;
+  bool in = false;
+
+  for(i = 0;i < DIM_SPACE; i++)
+    if(index[i] != 0 && index[i] != dim_nod-1)
+      ++nb_in;
+    else
+      return in;
+  if(nb_in == DIM_SPACE)
+    in = true;
+
+  return in;
 
 }
 
@@ -255,14 +257,19 @@ pvschema_core(int dim_space,int grid_size,int dim_nod,float *u_n_plus_one,
   
   for(i = 0; i < grid_size; i++){
     index_split(i,index,dim_nod);
-    eval_gradient(dim_nod,index,Du,u_n,step[0]);
-    if(norm_R3(Du) <= step[0] || p1p3(Du) <= step[0])
-      u_n_plus_one[i] = mcm_below_threshold(index,dim_nod,u_n);
+    if((here_boundary(dim_nod,index)) == true)
+     {
+	eval_gradient(dim_nod,index,Du,u_n,step[0]);
+	if(norm_R3(Du) <= step[0] || p1p3(Du) <= step[0])
+	  u_n_plus_one[i] = mcm_below_threshold(index,dim_nod,u_n);
+	else
+	  { 
+	    eval_direction_vector(Du,ni);
+	    u_n_plus_one[i] = mcm_above_threshold(index,ni,u_n,delta_t,step,
+						  first,last,dim_nod,g_nod);
+	  }
+     }
     else
-      { 
-	eval_direction_vector(Du,ni);
-	u_n_plus_one[i] = mcm_above_threshold(index,ni,u_n,delta_t,step,first,
-					      last,dim_nod,g_nod);
-      }
+      u_n_plus_one[i] = u_n[i];
   }
 }

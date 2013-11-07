@@ -376,7 +376,7 @@ main(int argc, char *argv[])
   
   step = malloc(dim_space*sizeof(float));
   for (i = 0; i < dim_space; i++)
-    step[i] = (last[i] - first[i])/(dim_nod- 1.00f);
+    step[i] = fabs(last[i] - first[i])/(dim_nod- 1.00f);
 	
   // Print the values read from file
   fprintf(stdout,"********************************\n");
