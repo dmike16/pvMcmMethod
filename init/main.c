@@ -77,7 +77,10 @@ autogenerate_octave_script(char *default_name,int dim_nod,
   int fd;
   struct iovec vec[_NLS];
   struct iovec *vec_next;
+  char cwd[1024];
 
+  if(getcwd(cwd,sizeof(cwd)) == NULL)
+    fprintf(stderr,"Error in get the cur dir: %s\n",strerror(errno));
  
   vec_next = vec;
 
@@ -94,9 +97,14 @@ autogenerate_octave_script(char *default_name,int dim_nod,
   vec_next->iov_len = 6;
   ++vec_next;
 
-  char _open[] = "f1 = fopen(\"/home/dmiky/Documenti/lavori_C_Cpp/tesi/arch/axesNodes.dat\");\n";
-  vec_next->iov_base = _open;
-  vec_next->iov_len = strlen(_open);
+  char *_open_1 = malloc((strlen(cwd)+33+1)*sizeof(char));
+  _allocate_error(_open_1);
+  strcpy(_open_1,"f1=fopen(\"");
+  strcat(_open_1,cwd);
+  strcat(_open_1,"/arch/axesNodes.dat");
+  strcat(_open_1,"\");\n");
+  vec_next->iov_base = _open_1;
+  vec_next->iov_len = strlen(_open_1);
   ++vec_next;
 
   char *range;
@@ -105,7 +113,7 @@ autogenerate_octave_script(char *default_name,int dim_nod,
   
  
   _digits(dim_nod,nd,tmp);
-   range = malloc((nd+1)*sizeof(char)); 
+  range = malloc((nd+1)*sizeof(char)); 
   _allocate_error(range);
   sprintf(range,"%d",dim_nod);
   
@@ -139,182 +147,192 @@ autogenerate_octave_script(char *default_name,int dim_nod,
   ++vec_next;
 
  char *_open_2;
- _open_2 = malloc((55+strlen(default_name)+1)*sizeof(char));
+ _open_2 = malloc((15+strlen(cwd)+strlen(default_name)+1)*sizeof(char));
  _allocate_error(_open_2);
- strcpy(_open_2,"f2=fopen(\"/home/dmiky/Documenti/lavori_C_Cpp/tesi/");
+ strcpy(_open_2,"f2=fopen(\"");
+ strcat(_open_2,cwd);
+ strcat(_open_2,"/");
  strcat(_open_2,default_name);
  strcat(_open_2,"\");\n");
  vec_next->iov_base = _open_2;
  vec_next->iov_len = strlen(_open_2);
  ++vec_next;
 
-  char _open_3[] = "f3 = fopen(\"/home/dmiky/Documenti/lavori_C_Cpp/tesi/arch/IC.dat\");\n";
-  vec_next->iov_base = _open_3;
-  vec_next->iov_len = strlen(_open_3);
-  ++vec_next;
+ char *_open_3 = malloc((strlen(cwd)+26+1)*sizeof(char));
+ _allocate_error(_open_1);
+ strcpy(_open_3,"f3=fopen(\"");
+ strcat(_open_3,cwd);
+ strcat(_open_3,"/arch/IC.dat");
+ strcat(_open_3,"\");\n");
+ 
+ vec_next->iov_base = _open_3;
+ vec_next->iov_len = strlen(_open_3);
+ ++vec_next;
+ 
+ vec_next->iov_base = cycle_for;
+ vec_next->iov_len = strlen(cycle_for);
+ ++vec_next;
+ 
+ char *cycle_for_j;
+ 
+ cycle_for_j = malloc((11+nd+1)*sizeof(char));
+ _allocate_error(cycle_for_j);
+ strcpy(cycle_for_j,"  for j=1:");
+ strcat(cycle_for_j,range);
+ strcat(cycle_for_j,"\n");
+ vec_next->iov_base = cycle_for_j;
+ vec_next->iov_len = strlen(cycle_for_j);
+ ++vec_next;
+ 
+ char *cycle_for_k;
+ 
+ cycle_for_k = malloc((13+nd+1)*sizeof(char));
+ _allocate_error(cycle_for_k);
+ strcpy(cycle_for_k,"    for k=1:");
+ strcat(cycle_for_k,range);
+ strcat(cycle_for_k,"\n");
+ vec_next->iov_base = cycle_for_k;
+ vec_next->iov_len = strlen(cycle_for_k);
+ ++vec_next;
+ 
+ vec_next->iov_base = "      v(j,k,i)=fscanf(f2,\"%f\",1);\n";
+ vec_next->iov_len = 34;
+ ++vec_next;
+ 
+ vec_next->iov_base = "      u(j,k,i)=fscanf(f3,\"%f\",1);\n";
+ vec_next->iov_len = 34;
+ ++vec_next;
+ 
+ vec_next->iov_base = "    end\n";
+ vec_next->iov_len = 8;
+ ++vec_next;
+ 
+ vec_next->iov_base = "  end\n";
+ vec_next->iov_len = 6;
+ ++vec_next;
+ 
+ vec_next->iov_base = "end\n";
+ vec_next->iov_len = 4;
+ ++vec_next;
 
-  vec_next->iov_base = cycle_for;
-  vec_next->iov_len = strlen(cycle_for);
-  ++vec_next;
+ vec_next->iov_base = "fclose(f2);\n";
+ vec_next->iov_len = 12;
+ ++vec_next;
 
-  char *cycle_for_j;
+ vec_next->iov_base = "fclose(f3);\n";
+ vec_next->iov_len = 12;
+ ++vec_next;
+ 
+ vec_next->iov_base = "view(-38,20);\n";
+ vec_next->iov_len = 14;
+ ++vec_next;
+ 
+ vec_next->iov_base = "[X,Y,Z]=meshgrid(x,y,z);\n";
+ vec_next->iov_len = 25;
+ ++vec_next;
+ 
+ vec_next->iov_base = "[faces,verts,c]=isosurface(X,Y,Z,u,1,Y);\n";
+ vec_next->iov_len = 41;
+ ++vec_next;
+ 
+ 
+ char *first_axis,*last_axis,*axis;
+ 
+ _digits((int)first[0],nd,tmp);
+ first_axis = malloc((nd+2)*sizeof(char));
+ _allocate_error(first_axis);
+ sprintf(first_axis,"%d",(int)first[0]);
+ _digits((int)last[0],nd,tmp);
+ last_axis = malloc((nd+2)*sizeof(char));
+ _allocate_error(last_axis);
+ sprintf(last_axis,"%d",(int)last[0]);
+ 
+ axis = malloc((15+dim_space*(strlen(first_axis)+strlen(last_axis))+1)*sizeof(char));
+ _allocate_error(axis);
+  
+ strcpy(axis,"axis([");
+ for(i = 0; i < dim_space; i++){
+   strcat(axis,first_axis);
+   strcat(axis,",");
+   strcat(axis,last_axis);
+   if(i != dim_space-1)
+     strcat(axis,",");
+ }
+ strcat(axis,"]);\n");
+ vec_next->iov_base = axis;
+ vec_next->iov_len = strlen(axis);
+ ++vec_next;
 
-  cycle_for_j = malloc((11+nd+1)*sizeof(char));
-  _allocate_error(cycle_for_j);
-  strcpy(cycle_for_j,"  for j=1:");
-  strcat(cycle_for_j,range);
-  strcat(cycle_for_j,"\n");
-  vec_next->iov_base = cycle_for_j;
-  vec_next->iov_len = strlen(cycle_for_j);
-  ++vec_next;
+ char _patch[] = "p = patch(\"Faces\",faces,\"Vertices\",verts,\"FaceVertexCData\",c,...\n";
+ vec_next->iov_base = _patch;
+ vec_next->iov_len = strlen(_patch);
+ ++vec_next;
+  
+ char _patch_2[] = "\"FaceColor\",\"interp\",\"EdgeColor\",\"blue\");\n";
+ vec_next->iov_base = _patch_2;
+ vec_next->iov_len = strlen(_patch_2);
+ ++vec_next;
+ 
+ vec_next->iov_base = "set(p,\"FaceLighting\",\"phong\");\n";
+ vec_next->iov_len = 31;
+ ++vec_next;
+ 
+ vec_next->iov_base = "figure()\n";
+ vec_next->iov_len = 9;
+ ++vec_next;
 
-  char *cycle_for_k;
+ vec_next->iov_base = axis;
+ vec_next->iov_len = strlen(axis);
+ ++vec_next;
 
-  cycle_for_k = malloc((13+nd+1)*sizeof(char));
-  _allocate_error(cycle_for_k);
-  strcpy(cycle_for_k,"    for k=1:");
-  strcat(cycle_for_k,range);
-  strcat(cycle_for_k,"\n");
-  vec_next->iov_base = cycle_for_k;
-  vec_next->iov_len = strlen(cycle_for_k);
-  ++vec_next;
+ vec_next->iov_base = "[faces,verts,c]=isosurface(X,Y,Z,v,1,Y);\n";
+ vec_next->iov_len = 41;
+ ++vec_next;
 
-  vec_next->iov_base = "      v(j,k,i)=fscanf(f2,\"%f\",1);\n";
-  vec_next->iov_len = 34;
-  ++vec_next;
+ char _patch_3[] = "p = patch(\"Faces\",faces,\"Vertices\",verts,\"FaceVertexCData\",c,...\n";
+ vec_next->iov_base = _patch_3;
+ vec_next->iov_len = strlen(_patch_3);
+ ++vec_next;
 
-  vec_next->iov_base = "      u(j,k,i)=fscanf(f3,\"%f\",1);\n";
-  vec_next->iov_len = 34;
-  ++vec_next;
+ char _patch_4[] = "\"FaceColor\",\"interp\",\"EdgeColor\",\"blue\");\n";
+ vec_next->iov_base = _patch_4;
+ vec_next->iov_len = strlen(_patch_4);
+ ++vec_next;
 
-  vec_next->iov_base = "    end\n";
-  vec_next->iov_len = 8;
-  ++vec_next;
+ vec_next->iov_base = "set(p,\"FaceLighting\",\"phong\");\n";
+ vec_next->iov_len = 31;
+ ++vec_next;
 
-  vec_next->iov_base = "  end\n";
-  vec_next->iov_len = 6;
-  ++vec_next;
+ vec_next->iov_base = "pause";
+ vec_next->iov_len = 5;
+ ++vec_next;
+ 
+ fd = open("scripts/plotSurface.m", O_WRONLY | O_CREAT | O_TRUNC, 0666);
+ size_t byte_wrote;
 
-  vec_next->iov_base = "end\n";
-  vec_next->iov_len = 4;
-  ++vec_next;
+ byte_wrote = writev(fd,vec,_NLS);
+ if((int)byte_wrote == -1){
+   free(_open_2);
+   free(cycle_for);
+   free(cycle_for_j);
+   free(cycle_for_k);
+   free(axis);
+   close(fd);
+   fprintf(stdout,"ERROR in CREAT OCTAVE SCRIPT\n");
+   exit(1);}
 
-  vec_next->iov_base = "fclose(f2);\n";
-  vec_next->iov_len = 12;
-  ++vec_next;
+ close(fd); 
 
-  vec_next->iov_base = "fclose(f3);\n";
-  vec_next->iov_len = 12;
-  ++vec_next;
-
-  vec_next->iov_base = "view(-38,20);\n";
-  vec_next->iov_len = 14;
-  ++vec_next;
-
-  vec_next->iov_base = "[X,Y,Z]=meshgrid(x,y,z);\n";
-  vec_next->iov_len = 25;
-  ++vec_next;
-
-  vec_next->iov_base = "[faces,verts,c]=isosurface(X,Y,Z,u,1,Y);\n";
-  vec_next->iov_len = 41;
-  ++vec_next;
-
-
-  char *first_axis,*last_axis,*axis;
-
-  _digits((int)first[0],nd,tmp);
-  first_axis = malloc((nd+2)*sizeof(char));
-  _allocate_error(first_axis);
-  sprintf(first_axis,"%d",(int)first[0]);
-  _digits((int)last[0],nd,tmp);
-  last_axis = malloc((nd+2)*sizeof(char));
-  _allocate_error(last_axis);
-  sprintf(last_axis,"%d",(int)last[0]);
-
-  axis = malloc((15+dim_space*(strlen(first_axis)+strlen(last_axis))+1)*sizeof(char));
-  _allocate_error(axis);
-
-  strcpy(axis,"axis([");
-  for(i = 0; i < dim_space; i++){
-    strcat(axis,first_axis);
-    strcat(axis,",");
-    strcat(axis,last_axis);
-    if(i != dim_space-1)
-      strcat(axis,",");
-  }
-  strcat(axis,"]);\n");
-  vec_next->iov_base = axis;
-  vec_next->iov_len = strlen(axis);
-  ++vec_next;
-
-  char _patch[] = "p = patch(\"Faces\",faces,\"Vertices\",verts,\"FaceVertexCData\",c,...\n";
-  vec_next->iov_base = _patch;
-  vec_next->iov_len = strlen(_patch);
-  ++vec_next;
-
-  char _patch_2[] = "\"FaceColor\",\"interp\",\"EdgeColor\",\"blue\");\n";
-  vec_next->iov_base = _patch_2;
-  vec_next->iov_len = strlen(_patch_2);
-  ++vec_next;
-
-  vec_next->iov_base = "set(p,\"FaceLighting\",\"phong\");\n";
-  vec_next->iov_len = 31;
-  ++vec_next;
-
-  vec_next->iov_base = "figure()\n";
-  vec_next->iov_len = 9;
-  ++vec_next;
-
-  vec_next->iov_base = axis;
-  vec_next->iov_len = strlen(axis);
-  ++vec_next;
-
-  vec_next->iov_base = "[faces,verts,c]=isosurface(X,Y,Z,v,1,Y);\n";
-  vec_next->iov_len = 41;
-  ++vec_next;
-
-  char _patch_3[] = "p = patch(\"Faces\",faces,\"Vertices\",verts,\"FaceVertexCData\",c,...\n";
-  vec_next->iov_base = _patch_3;
-  vec_next->iov_len = strlen(_patch_3);
-  ++vec_next;
-
-  char _patch_4[] = "\"FaceColor\",\"interp\",\"EdgeColor\",\"blue\");\n";
-  vec_next->iov_base = _patch_4;
-  vec_next->iov_len = strlen(_patch_4);
-  ++vec_next;
-
-  vec_next->iov_base = "set(p,\"FaceLighting\",\"phong\");\n";
-  vec_next->iov_len = 31;
-  ++vec_next;
-
-  vec_next->iov_base = "pause";
-  vec_next->iov_len = 5;
-  ++vec_next;
-
-  fd = open("scripts/plotSurface.m", O_WRONLY | O_CREAT | O_TRUNC, 0666);
-  size_t byte_wrote;
-
-  byte_wrote = writev(fd,vec,_NLS);
-  if((int)byte_wrote == -1){
-    free(_open_2);
-    free(cycle_for);
-    free(cycle_for_j);
-    free(cycle_for_k);
-    free(axis);
-    close(fd);
-    fprintf(stdout,"ERROR in CREAT OCTAVE SCRIPT\n");
-    exit(1);}
-
-  close(fd); 
-
-  free(range);
-  free(first_axis);
-  free(last_axis);  
-  free(_open_2);
-  free(cycle_for);
-  free(cycle_for_j);
-  free(cycle_for_k);
-  free(axis);
+ free(range);
+ free(first_axis);
+ free(last_axis);
+ free(_open_1);  
+ free(_open_2);
+ free(_open_3);
+ free(cycle_for);
+ free(cycle_for_j);
+ free(cycle_for_k);
+ free(axis);
   
 }
 
@@ -405,7 +423,7 @@ main(int argc, char *argv[])
   sigaction(SIGDIM, &sa, NULL);
   
   // MCM method	
-  float delta_t = step[0];
+  float delta_t = step[0]/4.00f;
   float *u_n_plus_one = malloc(grid_size*sizeof(float));
   float *u_n = malloc(grid_size*sizeof(float));
   char *default_name = NULL; 
@@ -418,12 +436,15 @@ main(int argc, char *argv[])
   make_output_file(u_n,"arch/IC.dat",grid_size);
   fprintf(stdout," FILE CREATED \n");
     
+  int tot_iter =  timeto/delta_t;
+   
   i = 0;
   time = 0.00f;
   for(;timeto;){
-    fprintf(stdout,".");
-    fflush(stdout);
     ++i;
+    if(tot_iter < i)++tot_iter;
+    fprintf(stdout,"\r%d%%",100*i/tot_iter);
+    fflush(stdout);
     pvschema_core(dim_space,grid_size,dim_nod,u_n_plus_one,u_n,
 		  step,delta_t,g_nod,first,last);
     time += delta_t;
@@ -435,7 +456,7 @@ main(int argc, char *argv[])
 	default_name = argv[2];
       if((make_output_file(u_n_plus_one,default_name,grid_size)) != -1)
 	{
-	  fprintf(stdout,"\nTempo %.2f reached in %d iter\n",timeto,i);
+	  fprintf(stdout,"\nTime %.2f reached in %d iter\n",timeto,i);
 	  fprintf(stdout,"FILE CREATED \n");
 	}
       else
