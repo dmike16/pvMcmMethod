@@ -3,7 +3,7 @@
 
 #include <math.h>
 
-extern float time;
+extern float timeto;
 
 inline float 
 u_sphere(int n, const float *point, float radius)
@@ -15,8 +15,8 @@ u_sphere(int n, const float *point, float radius)
 
   for (p = point; p <point + n; p++)
     u += (*p)*(*p); 
-  if (u <= r_two-2.00f*time)
-    return 4.0f*(r_two-2.00f*time-u)*(r_two-2.00f*time-u)/r_two;
+  if (u <= r_two-2.00f*timeto)
+    return 4.0f*(r_two-2.00f*timeto-u)*(r_two-2.00f*timeto-u)/r_two;
   else 
     return 0.0f;
   

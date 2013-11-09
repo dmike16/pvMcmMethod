@@ -17,7 +17,7 @@
 #define false      0
 #define DIM_SPACE  3
 #define NUM_VEC    2
-#define _step(x)   sqrt(2.0f*(x))
+#define _step(x)   sqrt(2.00f*(x))
 #define _z_dim(x)  (x)*(x)
 #define _y_dim(x)  (x)        
 #define norm_R3(x) (sqrt((x[0])*(x[0])+(x[1])*(x[1])+(x[2])*(x[2])))
@@ -155,7 +155,7 @@ mcm_above_threshold(const int index[], float ni[][NUM_VEC], const float *u_n,
 
 
   float I_n_point[DIM_SPACE];
-  float rho = sqrt(2.0f*delta_t);
+  float rho = _step(delta_t);
   float u_mcm = 0.0f;
   
   //Direction (+ni1 +ni2)
@@ -165,6 +165,7 @@ mcm_above_threshold(const int index[], float ni[][NUM_VEC], const float *u_n,
   out_of_boundary_check(first,last,I_n_point);
   u_mcm += interpol_fun_discrete(DIM_SPACE,dim_nod,g_nod,I_n_point,
 				 first,step,u_n);
+
   //Direction (-ni1 + ni2)
   I_n_point[0] = x[0]+rho*(-ni[0][0]+ni[0][1]);
   I_n_point[1] = x[1]+rho*(-ni[1][0]+ni[1][1]);
@@ -215,7 +216,7 @@ mcm_below_threshold(int index[], int dim_nod, const float *u_n)
     u_mcm += u_n[IF];
   }
 
-  u_mcm = u_mcm/6.0f;
+  u_mcm = u_mcm/6.00f;
   
   return u_mcm;
 

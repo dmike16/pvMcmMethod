@@ -318,7 +318,7 @@ autogenerate_octave_script(char *default_name,int dim_nod,
   
 }
 
-float time;
+float timeto;
 
 int 
 main(int argc, char *argv[])
@@ -333,7 +333,7 @@ main(int argc, char *argv[])
   int dim_nod;
   int dim_space;
   float *first,*last,*step;
-  float *nod_values,timeto,radius;
+  float *nod_values,time,radius;
 
   // Check the correct usage of the programm	
   if (argc != 2 && argc != 3){
@@ -405,7 +405,7 @@ main(int argc, char *argv[])
   sigaction(SIGDIM, &sa, NULL);
   
   // MCM method	
-  float delta_t=step[0];
+  float delta_t = step[0];
   float *u_n_plus_one = malloc(grid_size*sizeof(float));
   float *u_n = malloc(grid_size*sizeof(float));
   char *default_name = NULL; 
@@ -428,7 +428,7 @@ main(int argc, char *argv[])
 		  step,delta_t,g_nod,first,last);
     time += delta_t;
     _check_time(time,timeto);
-    if (fabs(timeto-time) <= TOL){
+    if (time == timeto){
       if(argc == 2)
 	default_name = "arch/dflMCMsolution.dat";
       else
@@ -452,9 +452,8 @@ main(int argc, char *argv[])
   //Eval the Norm infinity of the Error
   float *u_exact;
 
-  time = timeto;
 
-  fprintf(stdout,"Time to eval : %f\n",time);
+  fprintf(stdout,"Time to eval : %f\n",timeto);
   u_exact = eval_ic_on_grid(grid_size,dim_space,dim_nod,g_nod,u_sphere,radius);
   eval_method_errno(u_n_plus_one,u_exact,grid_size);
   
