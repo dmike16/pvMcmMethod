@@ -422,11 +422,13 @@ main(int argc, char *argv[])
   sa.sa_handler = handler_sigdim;
   sigaction(SIGDIM, &sa, NULL);
   
-  // MCM method	
-  float delta_t = step[0]/4.00f;
+  // MCM method
+  int tot_iter;	
+  float delta_t = step[0];
   float *u_n_plus_one = malloc(grid_size*sizeof(float));
   float *u_n = malloc(grid_size*sizeof(float));
-  char *default_name = NULL; 
+  char *default_name = NULL;
+  char s; 
 
   u_n = vector_copy(nod_values,u_n,grid_size);
   
@@ -435,49 +437,60 @@ main(int argc, char *argv[])
   fprintf(stdout," FILE CREATED \n");
   make_output_file(u_n,"arch/IC.dat",grid_size);
   fprintf(stdout," FILE CREATED \n");
-    
-  int tot_iter =  timeto/delta_t;
-   
-  i = 0;
-  time = 0.00f;
-  for(;timeto;){
-    ++i;
-    if(tot_iter < i)++tot_iter;
-    fprintf(stdout,"\r%d%%",100*i/tot_iter);
-    fflush(stdout);
-    pvschema_core(dim_space,grid_size,dim_nod,u_n_plus_one,u_n,
-		  step,delta_t,g_nod,first,last);
-    time += delta_t;
-    _check_time(time,timeto);
-    if (time == timeto){
-      if(argc == 2)
-	default_name = "arch/dflMCMsolution.dat";
-      else
-	default_name = argv[2];
-      if((make_output_file(u_n_plus_one,default_name,grid_size)) != -1)
-	{
-	  fprintf(stdout,"\nTime %.2f reached in %d iter\n",timeto,i);
-	  fprintf(stdout,"FILE CREATED \n");
-	}
-      else
-	perror("make_output_file");
-      break;
-    }
-    u_n = vector_copy(u_n_plus_one,u_n,grid_size);
-  }
 
-  //Generate octave script in order to plot the solution
-  autogenerate_octave_script(default_name,dim_nod,first,last,dim_space);
-  fprintf(stdout,"Script generated, into Dir \"scripts\"\n"); 
-
-  //Eval the Norm infinity of the Error
+  //Eval the exact solution
   float *u_exact;
-
 
   fprintf(stdout,"Time to eval : %f\n",timeto);
   u_exact = eval_ic_on_grid(grid_size,dim_space,dim_nod,g_nod,u_sphere,radius);
-  eval_method_errno(u_n_plus_one,u_exact,grid_size);
   
+  do{
+    tot_iter =  timeto/delta_t;
+    i = 0;
+    time = 0.00f;
+    for(;timeto;){
+      ++i;
+      if(tot_iter < i)++tot_iter;
+      fprintf(stdout,"\r%d%%",100*i/tot_iter);
+      fflush(stdout);
+      pvschema_core(dim_space,grid_size,dim_nod,u_n_plus_one,u_n,
+		    step,delta_t,g_nod,first,last);
+      time += delta_t;
+      _check_time(time,timeto);
+      if (time == timeto){
+	if(argc == 2)
+	  default_name = "arch/dflMCMsolution.dat";
+	else
+	  default_name = argv[2];
+	if((make_output_file(u_n_plus_one,default_name,grid_size)) != -1)
+	  {
+	    fprintf(stdout,"\nTime %.2f reached in %d iter\n",timeto,i);
+	    fprintf(stdout,"FILE CREATED \n");
+	  }
+	else
+	  perror("make_output_file");
+	break;
+      }
+      u_n = vector_copy(u_n_plus_one,u_n,grid_size);
+    }
+
+    //Eval the Norm infinity of the Error  
+    eval_method_errno(u_n_plus_one,u_exact,grid_size);
+
+    //Generate octave script in order to plot the solution
+    autogenerate_octave_script(default_name,dim_nod,first,last,dim_space);
+    fprintf(stdout,"Script generated, into Dir \"scripts\"\n");
+
+    fprintf(stdout,"Do you want to helve delta T(y/n)?\n");
+    if((s=getchar())=='\n')
+      s = getchar();
+    if(s == 'n')break;
+
+    delta_t = delta_t/2.00f;
+    u_n = vector_copy(nod_values,u_n,grid_size);
+    
+  }while(s != 'n');
+
   // Clean Allocated Memory
   clear_grid(g_nod,dim_space);
   free(step);
