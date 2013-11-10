@@ -33,11 +33,11 @@ typedef int bool;
 static inline int
 index_full(int dim_nod,int index[])
 {
-  int index_full;
+  int index_f;
 
-  index_full = index[0]+dim_nod*index[1]+dim_nod*dim_nod*index[2];
+  index_f = index[0]+dim_nod*index[1]+dim_nod*dim_nod*index[2];
 
-  return index_full;
+  return index_f;
 }
 
 static inline int
@@ -231,8 +231,11 @@ here_boundary(int dim_nod,int *index)
   for(i = 0;i < DIM_SPACE; i++)
     if(index[i] != 0 && index[i] != dim_nod-1)
       ++nb_in;
-    else
-      return in;
+    else if(index[i] == 0)
+      ++index[i];
+    else if(index[i] == dim_nod-1)
+      --index[i];
+ 
   if(nb_in == DIM_SPACE)
     in = true;
 
@@ -251,7 +254,7 @@ pvschema_core(int dim_space,int grid_size,int dim_nod,float *u_n_plus_one,
   if(dim_space != 3)
     raise(SIGDIM);
   
-  int index[DIM_SPACE];
+  int index[DIM_SPACE],id_full;
   float Du[DIM_SPACE];
   float ni[DIM_SPACE][NUM_VEC];
 
@@ -270,7 +273,9 @@ pvschema_core(int dim_space,int grid_size,int dim_nod,float *u_n_plus_one,
 						  first,last,dim_nod,g_nod);
 	  }
      }
-    else
-      u_n_plus_one[i] = u_n[i];
+    else{
+      id_full = index_full(dim_nod,index);
+      u_n_plus_one[i] = u_n[id_full];
+    }
   }
 }
