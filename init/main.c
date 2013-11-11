@@ -487,6 +487,7 @@ main(int argc, char *argv[])
     if(s == 'n')break;
 
     delta_t = delta_t/2.00f;
+    u_exact = vector_copy(u_n_plus_one,u_exact,grid_size);
     u_n = vector_copy(nod_values,u_n,grid_size);
     
   }while(s != 'n');
