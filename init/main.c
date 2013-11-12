@@ -336,6 +336,22 @@ autogenerate_octave_script(char *default_name,int dim_nod,
   
 }
 
+static char
+*update_bar(char *bar, int N,int iter,int tot_iter)
+{
+  register int i;
+  char *update_bar = bar;
+  int status = N*iter/tot_iter;
+
+
+  for(i = 0; i < status; i++)
+    update_bar[i] = '/';
+
+  return update_bar;
+
+}
+
+
 float timeto;
 
 int 
@@ -428,8 +444,12 @@ main(int argc, char *argv[])
   float *u_n_plus_one = malloc(grid_size*sizeof(float));
   float *u_n = malloc(grid_size*sizeof(float));
   char *default_name = NULL;
-  char s; 
+  char s;
+  char *bar = malloc(18*sizeof(char));
 
+  _allocate_error(bar);
+  
+  
   u_n = vector_copy(nod_values,u_n,grid_size);
   
   
@@ -446,12 +466,15 @@ main(int argc, char *argv[])
   
   do{
     tot_iter =  timeto/delta_t;
+    memset(bar,' ',18);
+    bar[18] = '\0';
     i = 0;
     time = 0.00f;
     for(;timeto;){
       ++i;
       if(tot_iter < i)++tot_iter;
-      fprintf(stdout,"\r%d%%",100*i/tot_iter);
+      update_bar(bar,18,i,tot_iter);
+      fprintf(stdout,"\r[%s]%d%%",bar,100*i/tot_iter);
       fflush(stdout);
       pvschema_core(dim_space,grid_size,dim_nod,u_n_plus_one,u_n,
 		    step,delta_t,g_nod,first,last);
@@ -501,6 +524,7 @@ main(int argc, char *argv[])
   free(u_n);
   free(u_n_plus_one);
   free(u_exact);
+  free(bar);
     
   return 0;
   
