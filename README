@@ -1,0 +1,14 @@
+/*
+ * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * 
+ *                                                                          *
+ *  PVMETHOD-PROJECT                                                        *
+ *                                                                          *
+ *  ================                                                        *
+ *                                                                          *
+ *  This my thesis's project, about a method to approximate                 *
+ *  the equation of surface evolution by meam curvature flow in R^3 space.  *
+ *  At the end of the execution of this program we'll have an octave script *
+ *  in order to plot the solution.                                          *
+ *                                                                          *
+ * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+ */
