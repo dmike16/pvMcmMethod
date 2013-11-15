@@ -84,7 +84,7 @@ export CONFIG_SHELL CC AR CFLAGS MAKE LINUXINCLUDE LD OPTIONS
 export KBUILD_ARFLAGS := D
 
 # Primary target dependencies
-all: pvschema
+all: pvschema.out
 
 core-y		:= pvmcm/
 init-y		:= init/
@@ -108,7 +108,7 @@ pvschema-main := $(core-y) $(libs-y) $(drivers-y)
 pvschema-all  := $(pvschema-init) $(pvschema-main)
 export KBUILD_PVSCHEMA_OBJS := $(pvschema-all)
 
-pvschema: $(pvschema-init) $(pvschema-main)
+pvschema.out: $(pvschema-init) $(pvschema-main)
 	$(CC) -o arch/$@ $^ $(SYSTEM-LIBRARIES)
 
 
