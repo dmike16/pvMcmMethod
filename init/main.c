@@ -231,8 +231,8 @@ autogenerate_octave_script(char *default_name,int dim_nod,
  vec_next->iov_len = 25;
  ++vec_next;
  
- vec_next->iov_base = "[faces,verts,c]=isosurface(X,Y,Z,u,1,Y);\n";
- vec_next->iov_len = 41;
+ vec_next->iov_base = "[faces,verts,c]=isosurface(X,Y,Z,u,0.5,Y);\n";
+ vec_next->iov_len = 43;
  ++vec_next;
  
  
@@ -285,8 +285,8 @@ autogenerate_octave_script(char *default_name,int dim_nod,
  vec_next->iov_len = strlen(axis);
  ++vec_next;
 
- vec_next->iov_base = "[faces,verts,c]=isosurface(X,Y,Z,v,1,Y);\n";
- vec_next->iov_len = 41;
+ vec_next->iov_base = "[faces,verts,c]=isosurface(X,Y,Z,v,0.5,Y);\n";
+ vec_next->iov_len = 43;
  ++vec_next;
 
  char _patch_3[] = "p = patch(\"Faces\",faces,\"Vertices\",verts,\"FaceVertexCData\",c,...\n";
@@ -510,7 +510,6 @@ main(int argc, char *argv[])
     if(s == 'n')break;
 
     delta_t = delta_t/2.00f;
-    u_exact = vector_copy(u_n_plus_one,u_exact,grid_size);
     u_n = vector_copy(nod_values,u_n,grid_size);
     
   }while(s != 'n');

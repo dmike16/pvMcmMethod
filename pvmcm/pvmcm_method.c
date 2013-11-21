@@ -17,6 +17,7 @@
 #define false      0
 #define DIM_SPACE  3
 #define NUM_VEC    2
+#define C          0.10f
 #define _step(x)   sqrt(2.00f*(x))
 #define _z_dim(x)  (x)*(x)
 #define _y_dim(x)  (x)        
@@ -264,7 +265,7 @@ pvschema_core(int dim_space,int grid_size,int dim_nod,float *u_n_plus_one,
     if((here_boundary(dim_nod,index)) == true)
      {
 	eval_gradient(dim_nod,index,Du,u_n,step[0]);
-	if(norm_R3(Du) <= step[0] || p1p3(Du) <= step[0])
+	if(norm_R3(Du) <= C*step[0] || p1p3(Du) <= C*step[0])
 	  u_n_plus_one[i] = mcm_below_threshold(index,dim_nod,u_n);
 	else
 	  { 

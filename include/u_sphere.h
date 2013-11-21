@@ -16,7 +16,7 @@ u_sphere(int n, const float *point, float radius)
   for (p = point; p <point + n; p++)
     u += (*p)*(*p); 
   if (u <= r_two-2.00f*timeto)
-    return 4.0f*(r_two-2.00f*timeto-u)*(r_two-2.00f*timeto-u)/r_two;
+    return powf((r_two-2.00f*timeto-u)/r_two,4);
   else 
     return 0.0f;
   
