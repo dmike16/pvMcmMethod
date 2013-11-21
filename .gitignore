@@ -19,3 +19,12 @@
 *.out
 *.app
 *.hex
+
+# Makefile C Dependencies
+*.d
+
+# Octave scripts
+*.m
+
+# Data file
+*.dat

@@ -1,0 +1,113 @@
+#==============================================================================
+# Building
+#=============================================================================
+
+src := $(obj)
+
+PHONY := __build
+__build:
+
+
+obj-y		:=
+lib-y		:=
+target		:=
+subdir-y	:=
+cflags-y	:=
+
+define make-depend
+  $(CC) -MM       \
+        -MF $3    \
+        -MP       \
+        -MT $2    \
+        $(cflags-y) \
+        $1 
+endef
+
+include scripts/Kbuild.include
+
+# The filename Kbuild has precedence over Makefile
+kbuild-dir := $(if $(filter /%,$(src)),$(src),$(objtree)/$(src))
+kbuild-file:= $(if $(wildcard $(kbuild-dir)/Kbuild),$(kbuild-dir)/Kbuild,$(kbuild-dir)/Makefile)
+include $(kbuild-file)
+
+
+include scripts/Makefile.lib 
+
+ifneq ($(strip $(lib-y)),)
+lib-target     := $(obj)/lib.a
+endif
+
+ifneq ($(strip $(obj-y)),)
+builtin-target := $(obj)/built-in.o
+endif
+
+
+__build: $(builtin-target) $(lib-target) $(subdir-yo)
+	 @:
+
+# Compile C source (.c)
+#----------------------------------------------------------------------------
+
+# Generate updated dependency information 
+#
+
+quiet_cmd_dep_c_h = GEN	   $(subst .o,.d,$@)
+cmd_dep_c_h = $(call make-depend,$<,$@,$(subst .o,.d,$@))
+
+# Compile file (.c) in file (.o)
+#------------------------------------------------------------------------------
+
+quiet_cmd_cc_o_c = CC	$@
+cmd_cc_o_c = $(CC) $(cflags-y) -c -o $@ $<
+
+define rule_cc_o_c
+       $(call cmd,dep_c_h)
+       $(call cmd,cc_o_c)
+endef
+
+$(obj)/%.o: $(obj)/%.c
+	    $(rule_cc_o_c) 
+
+-include $(subst .o,.d,$(obj-y))
+
+# Build the compiled-in targets
+#-----------------------------------------------------------------------------
+
+# To build objects in subdirs, we need to descend into the directories
+$(sort $(subdir-obj-y)): $(subdir-yo) ;
+
+#
+# Rule to compile a set of .o files into one .o file
+#
+ifdef builtin-target
+quiet_cmd_link_o_target = LD	$@
+cmd_link_o_target = $(if $(strip $(obj-y)),\
+		      ld -r -o $@ $(filter $(obj-y), $^))
+$(builtin-target): $(obj-y)
+	$(call cmd,link_o_target)
+
+targets += $(builtin-target)
+endif
+
+#
+# Rule to compile a set of .o files into one .a file
+#
+ifdef lib-target
+quiet_cmd_link_l_target = AR	$@
+cmd_link_l_target = rm -f $@; $(AR) rcs$(KBUILD_ARFLAGS) $@ $(lib-y)
+
+$(lib-target): $(lib-y)
+	$(call cmd,link_l_target)
+
+targets =+ $(lib-target)
+endif
+
+#Descending
+#------------------------------------------------------------------------------
+
+PHONY += $(subdir-yo)
+$(subdir-yo):
+	$(Q)$(MAKE) $(build)=$@
+
+
+.PHONY: $(PHONY)

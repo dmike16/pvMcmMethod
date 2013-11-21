@@ -1,0 +1,40 @@
+###
+# Generic definitions
+
+comma	  := ,
+squote	  := '
+empty	  := 
+space	  := $(empty) $(empty)
+
+###
+dot-target = $(dir $@).$(notdir $@)
+
+###
+depfile = $(subst $(comma),_,$(dot-target).d)
+
+###
+basetarget = $(basename $(notdir $@))
+
+###
+escsq = $(subst $(squote),'\$(squote)',$1)
+
+###
+	kecho := :
+ quiet_kecho  := echo
+silent_kecho  := :
+kecho := $($(quiet)kecho)
+
+###
+echo-cmd = $(if $($(quiet)cmd_$(1)),\
+         echo ' $(call escsq,$($(quiet)cmd_$(1)))';)
+cmd = @$(echo-cmd) $(cmd_$(1)) 
+
+###
+#Usage:
+#$(Q)$(MAKE) $(build)=dir
+build := -f $(if $(KBUILD_SRC),$(srctree)/)scripts/Makefile.build obj
+
+###
+# $(call file-existes, file-name)
+# Return non-null if a file exists
+file-exists = $(wildcard $1)
