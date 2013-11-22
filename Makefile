@@ -71,7 +71,7 @@ $(srctree)/scripts/Kbuild.include: ;
 include $(srctree)/scripts/Kbuild.include
 
 CC		= gcc
-CFLAGS		= -O2 -W -Wall -pedantic -ansi -std=gnu99
+CFLAGS		= $(USCFLAGS) -O2 -W -Wall -pedantic -ansi -std=gnu99
 AR		= ar
 LD		= ld
 MKDIR		= mkdir
