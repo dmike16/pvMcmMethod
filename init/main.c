@@ -16,6 +16,7 @@
 #include <unistd.h>
 #include <errno.h>
 #include <signal.h>
+#include <time.h>
 #include "grid.h"
 #include "u0.h"
 #include "u_sphere.h"
@@ -361,6 +362,8 @@ main(int argc, char *argv[])
 #ifdef MTRACE
   mtrace();
 #endif /* MTRACE */
+
+  clock_t start_clock = clock();
   
   gridType g_nod;
   register int i;
@@ -451,7 +454,17 @@ main(int argc, char *argv[])
   
   
   u_n = vector_copy(nod_values,u_n,grid_size);
-  
+ 
+  //Debug The interpol function  
+#ifdef INTER_DEBUG  
+  float I_point[3] = {0.0f,0.0f,0.0f};
+  float test_inter;
+
+  test_inter = interpol_fun_discrete(dim_space,dim_nod,g_nod,I_point,first,step,u_n);
+  fprintf(stdout," %.4f , %.4f \n",u_0(3,I_point,3.0f),test_inter);
+  fprintf(stdout," Err interpol = %.4f\n",fabs(u_0(3,I_point,3.0f)-test_inter));
+  return 0;
+#endif
   
   output_axes_nod(g_nod,dim_space,"arch/axesNodes.dat");
   fprintf(stdout," FILE CREATED \n");
@@ -503,7 +516,8 @@ main(int argc, char *argv[])
     //Generate octave script in order to plot the solution
     autogenerate_octave_script(default_name,dim_nod,first,last,dim_space);
     fprintf(stdout,"Script generated, into Dir \"scripts\"\n");
-
+    fprintf(stdout,"Time used by CPU : %g sec.\n",(clock()-start_clock)/
+	    (double) CLOCKS_PER_SEC);
     fprintf(stdout,"Do you want to helve delta T(y/n)?\n");
     if((s=getchar())=='\n')
       s = getchar();
