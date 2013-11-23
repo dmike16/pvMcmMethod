@@ -72,7 +72,7 @@ make_output_file(const float *buffer, char *name,int dimension)
 
 static void
 autogenerate_octave_script(char *default_name,int dim_nod,
-			   float *first, float *last, int dim_space)
+			   float *first, float *last, float level,int dim_space)
 {
   register int i;
   int fd;
@@ -232,8 +232,21 @@ autogenerate_octave_script(char *default_name,int dim_nod,
  vec_next->iov_len = 25;
  ++vec_next;
  
- vec_next->iov_base = "[faces,verts,c]=isosurface(X,Y,Z,u,0.5,Y);\n";
- vec_next->iov_len = 43;
+ char *level_set,*isosurface_1;
+
+ _digits((int)level,nd,tmp);
+ level_set = malloc(nd+4+1);
+ _allocate_error(level_set);
+ sprintf(level_set,"%.3f",level);
+
+ isosurface_1 = malloc(40+strlen(level_set)+1);
+ _allocate_error(isosurface_1);
+ strcpy(isosurface_1,"[faces,verts,c]=isosurface(X,Y,Z,u,");
+ strcat(isosurface_1,level_set);
+ strcat(isosurface_1,",Y);\n");
+
+ vec_next->iov_base = isosurface_1;
+ vec_next->iov_len = strlen(isosurface_1);
  ++vec_next;
  
  
@@ -286,8 +299,16 @@ autogenerate_octave_script(char *default_name,int dim_nod,
  vec_next->iov_len = strlen(axis);
  ++vec_next;
 
- vec_next->iov_base = "[faces,verts,c]=isosurface(X,Y,Z,v,0.5,Y);\n";
- vec_next->iov_len = 43;
+ char *isosurface_2;
+
+ isosurface_2 = malloc(40+strlen(level_set)+1);
+ _allocate_error(isosurface_2);
+ strcpy(isosurface_2,"[faces,verts,c]=isosurface(X,Y,Z,v,");
+ strcat(isosurface_2,level_set);
+ strcat(isosurface_2,",Y);\n");
+
+ vec_next->iov_base = isosurface_2;
+ vec_next->iov_len = strlen(isosurface_2);
  ++vec_next;
 
  char _patch_3[] = "p = patch(\"Faces\",faces,\"Vertices\",verts,\"FaceVertexCData\",c,...\n";
@@ -318,6 +339,9 @@ autogenerate_octave_script(char *default_name,int dim_nod,
    free(cycle_for_j);
    free(cycle_for_k);
    free(axis);
+   free(level_set);
+   free(isosurface_1);
+   free(isosurface_2);
    close(fd);
    fprintf(stdout,"ERROR in CREAT OCTAVE SCRIPT\n");
    exit(1);}
@@ -333,6 +357,9 @@ autogenerate_octave_script(char *default_name,int dim_nod,
  free(cycle_for);
  free(cycle_for_j);
  free(cycle_for_k);
+ free(level_set);
+ free(isosurface_1);
+ free(isosurface_2);
  free(axis);
   
 }
@@ -370,7 +397,8 @@ main(int argc, char *argv[])
   int dim_nod;
   int dim_space;
   float *first,*last,*step;
-  float *nod_values,time,radius;
+  float *nod_values;
+  float level,time,radius;
 
   // Check the correct usage of the programm	
   if (argc != 2 && argc != 3){
@@ -401,6 +429,8 @@ main(int argc, char *argv[])
   dim_nod = atoi(tmp);
   tmp = strtok(NULL,"\n");
   radius = atof(tmp);
+  tmp = strtok(NULL,"\n");
+  level = atof(tmp);
   first = (float*) malloc(dim_space*sizeof(float));
   last = (float*) malloc(dim_space*sizeof(float));
   for (i = 0; (tmp = strtok(NULL, "\n")) != NULL ;i++){
@@ -426,6 +456,7 @@ main(int argc, char *argv[])
   fprintf(stdout,"TIMEOUT = %.2f\n",timeto);
   fprintf(stdout,"**********************************\n");
   fprintf(stdout,"Initial Condition (IC): paraboloide with radius %.2f\n",radius);
+  fprintf(stdout,"Level Set : %.2f\n",level);
   
   // Create the grid in R^n
   int grid_size = (int) pow(dim_nod,dim_space); 
@@ -452,31 +483,24 @@ main(int argc, char *argv[])
 
   _allocate_error(bar);
   
-  
+  //Initialize u_n
   u_n = vector_copy(nod_values,u_n,grid_size);
- 
-  //Debug The interpol function  
-#ifdef INTER_DEBUG  
-  float I_point[3] = {0.0f,0.0f,0.0f};
-  float test_inter;
 
-  test_inter = interpol_fun_discrete(dim_space,dim_nod,g_nod,I_point,first,step,u_n);
-  fprintf(stdout," %.4f , %.4f \n",u_0(3,I_point,3.0f),test_inter);
-  fprintf(stdout," Err interpol = %.4f\n",fabs(u_0(3,I_point,3.0f)-test_inter));
-  return 0;
-#endif
-  
+  // Create file with axis nod and IC values
   output_axes_nod(g_nod,dim_space,"arch/axesNodes.dat");
   fprintf(stdout," FILE CREATED \n");
   make_output_file(u_n,"arch/IC.dat",grid_size);
   fprintf(stdout," FILE CREATED \n");
 
-  //Eval the exact solution
+  //Eval the exact solution and the exact collapse time
   float *u_exact;
 
   fprintf(stdout,"Time to eval : %f\n",timeto);
   u_exact = eval_ic_on_grid(grid_size,dim_space,dim_nod,g_nod,u_sphere,radius);
-  
+  fprintf(stdout,"The Sphere will collapse at the time: %.2f\n",
+	  radius*radius/(2.00f*(dim_space-1)));
+
+  //MCM method iteration
   do{
     tot_iter =  timeto/delta_t;
     memset(bar,' ',18);
@@ -510,11 +534,19 @@ main(int argc, char *argv[])
       u_n = vector_copy(u_n_plus_one,u_n,grid_size);
     }
 
+
+    // Case Output time = 0.0
+    if(timeto == 0){
+      fprintf(stdout,"Nothing to do the the solution is equal condition"
+	      " to the initial condition\n");
+      break;
+    }
+
     //Eval the Norm infinity of the Error  
     eval_method_errno(u_n_plus_one,u_exact,grid_size);
 
     //Generate octave script in order to plot the solution
-    autogenerate_octave_script(default_name,dim_nod,first,last,dim_space);
+    autogenerate_octave_script(default_name,dim_nod,first,last,level,dim_space);
     fprintf(stdout,"Script generated, into Dir \"scripts\"\n");
     fprintf(stdout,"Time used by CPU : %g sec.\n",(clock()-start_clock)/
 	    (double) CLOCKS_PER_SEC);
@@ -526,7 +558,7 @@ main(int argc, char *argv[])
     delta_t = delta_t/2.00f;
     u_n = vector_copy(nod_values,u_n,grid_size);
     
-  }while(s != 'n');
+  }while(s != 'n' && (timeto));
 
   // Clean Allocated Memory
   clear_grid(g_nod,dim_space);
