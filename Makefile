@@ -172,7 +172,7 @@ PHONY += debug-memory
 debug-memory :
 	@$(MAKE) OPTIONS=-d
 	export MALLOC_TRACE=memory.log
-	./arch/pvschema ini.dat && mtrace arch/pvschema $$MALLOC_TRACE
+	./arch/pvschema.out ini.dat && mtrace arch/pvschema.out $$MALLOC_TRACE
 
 #===============================================================================
 
@@ -194,6 +194,5 @@ endif
 # Usage:
 # $(Q)$(MAKE) $(clean)=dir
 clean := -f $(if $(KBUILD_SRC),$(srctree)/)scripts/Makefile.clean obj
-
 
 .PHONY : $(PHONY)
