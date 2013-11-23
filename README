@@ -12,14 +12,28 @@
  *  Usage:                                                                  *
  *   pvschema.out <file_initial_values>.dat (<filename_apprx_solu>.dat)     *
  *  The <file_initial_values>.dat must contain only the initial values in   *
- *  numerical form, in this order :                                         *
+ *  numerical form, in this order (see example ini.dat):                    *
  *   .OutPutTime                                                            *
  *   .DimSpace (that must be 3 to use the func in pvmcm directory           *
  *   .Nodes                                                                 *
- *   .Radius   (only in the sphere case)             			    *
+ *   .Radius   (only in the sphere case)                                    *
+ *   .Level-set                                        			    *
  *   (for DimSpace times)                                                   *
  *   .LowAxesBoundary                                                       *
  *   .UpperAxesBoundary                                                     *
  *                                                                          *
+ *  ===================                                                     *
+ * Example 'ini.dat':                                                       *
+ * 0.5                                                                      *
+ * 3                                                                        *
+ * 100                                                                      *
+ * 3.00                                                                     *
+ * 0.5                                                                      *
+ * -4.00                                                                    *
+ * 4.00                                                                     *
+ * -4.00                                                                    *
+ * 4.00                                                                     *
+ * -4.00                                                                    *
+ * 4.00                                                                     *
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
  */
