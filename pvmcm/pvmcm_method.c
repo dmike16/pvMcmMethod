@@ -12,12 +12,13 @@
 #include "interpol_fun.h"
 #include "pvschema_core.h"
 #include "signal_dim.h"
+#include "out_boundary.h"
+#include "out_of_grid_check.h"
 
-#define true       1
-#define false      0
+
 #define DIM_SPACE  3
 #define NUM_VEC    2
-#define C          0.10f
+#define C          0.01f
 #define _step(x)   sqrt(2.00f*(x))
 #define _z_dim(x)  (x)*(x)
 #define _y_dim(x)  (x)        
@@ -28,8 +29,6 @@
       var -= cond;              \
       add++;	                \
   } while(var >= cond)
-
-typedef int bool;
 
 static inline int
 index_full(int dim_nod,int index[])
@@ -132,18 +131,6 @@ eval_direction_vector(const float Du[],float ni[][NUM_VEC])
 
 }
 
-static inline void
-out_of_boundary_check(const float *first,const float *last, float pt[])
-{
-  register int i;
-
-  for(i = 0; i < DIM_SPACE; i++)
-    if(pt[i] < first[i])
-      pt[i] = first[i];
-    else if(pt[i] > last[i])
-      pt[i] = last[i];
-
-}
 
 static inline float
 mcm_above_threshold(const int index[], float ni[][NUM_VEC], const float *u_n,
@@ -163,7 +150,7 @@ mcm_above_threshold(const int index[], float ni[][NUM_VEC], const float *u_n,
   I_n_point[0] = x[0]+rho*(ni[0][0]+ni[0][1]);
   I_n_point[1] = x[1]+rho*(ni[1][0]+ni[1][1]);
   I_n_point[2] = x[2]+rho*(ni[2][0]+ni[2][1]);
-  out_of_boundary_check(first,last,I_n_point);
+  out_of_grid_check(DIM_SPACE,first,last,I_n_point);
   u_mcm += interpol_fun_discrete(DIM_SPACE,dim_nod,g_nod,I_n_point,
 				 first,step,u_n);
 
@@ -171,21 +158,21 @@ mcm_above_threshold(const int index[], float ni[][NUM_VEC], const float *u_n,
   I_n_point[0] = x[0]+rho*(-ni[0][0]+ni[0][1]);
   I_n_point[1] = x[1]+rho*(-ni[1][0]+ni[1][1]);
   I_n_point[2] = x[2]+rho*(-ni[2][0]+ni[2][1]);
-  out_of_boundary_check(first,last,I_n_point);
+  out_of_grid_check(DIM_SPACE,first,last,I_n_point);
   u_mcm += interpol_fun_discrete(DIM_SPACE,dim_nod,g_nod,I_n_point,
 				 first,step,u_n);
   //Direction (+ni1 - ni2)
   I_n_point[0] = x[0]+rho*(ni[0][0]-ni[0][1]);
   I_n_point[1] = x[1]+rho*(ni[1][0]-ni[1][1]);
   I_n_point[2] = x[2]+rho*(ni[2][0]-ni[2][1]);
-  out_of_boundary_check(first,last,I_n_point);
+  out_of_grid_check(DIM_SPACE,first,last,I_n_point);
   u_mcm += interpol_fun_discrete(DIM_SPACE,dim_nod,g_nod,I_n_point,
 				 first,step,u_n);
   //Direction (-ni1 - ni2)
   I_n_point[0] = x[0]+rho*(-ni[0][0]-ni[0][1]);
   I_n_point[1] = x[1]+rho*(-ni[1][0]-ni[1][1]);
   I_n_point[2] = x[2]+rho*(-ni[2][0]-ni[2][1]);
-  out_of_boundary_check(first,last,I_n_point);
+  out_of_grid_check(DIM_SPACE,first,last,I_n_point);
   u_mcm += interpol_fun_discrete(DIM_SPACE,dim_nod,g_nod,I_n_point,
 				 first,step,u_n);
   u_mcm = (u_mcm)*(0.25f);
@@ -196,7 +183,7 @@ mcm_above_threshold(const int index[], float ni[][NUM_VEC], const float *u_n,
 
 
 static inline float 
-mcm_below_threshold(int index[], int dim_nod, const float *u_n)
+mcm_below_threshold(int *index, int dim_nod, const float *u_n)
 {
 
   register int i;
@@ -223,26 +210,7 @@ mcm_below_threshold(int index[], int dim_nod, const float *u_n)
 
 }
 
-static bool
-here_boundary(int dim_nod,int *index)
-{
-  register int i,nb_in = 0;
-  bool in = false;
 
-  for(i = 0;i < DIM_SPACE; i++)
-    if(index[i] != 0 && index[i] != dim_nod-1)
-      ++nb_in;
-    else if(index[i] == 0)
-      ++index[i];
-    else if(index[i] == dim_nod-1)
-      --index[i];
- 
-  if(nb_in == DIM_SPACE)
-    in = true;
-
-  return in;
-
-}
 
 void 
 pvschema_core(int dim_space,int grid_size,int dim_nod,float *u_n_plus_one, 
@@ -255,14 +223,14 @@ pvschema_core(int dim_space,int grid_size,int dim_nod,float *u_n_plus_one,
   if(dim_space != 3)
     raise(SIGDIM);
   
-  int index[DIM_SPACE],id_full;
+  int index[DIM_SPACE];
   float Du[DIM_SPACE];
   float ni[DIM_SPACE][NUM_VEC];
 
   
   for(i = 0; i < grid_size; i++){
     index_split(i,index,dim_nod);
-    if((here_boundary(dim_nod,index)) == true)
+    if((out_boundary(DIM_SPACE,dim_nod,index)))
      {
 	eval_gradient(dim_nod,index,Du,u_n,step[0]);
 	if(norm_R3(Du) <= C*step[0] || p1p3(Du) <= C*step[0])
@@ -274,9 +242,8 @@ pvschema_core(int dim_space,int grid_size,int dim_nod,float *u_n_plus_one,
 						  first,last,dim_nod,g_nod);
 	  }
      }
-    else{
-      id_full = index_full(dim_nod,index);
-      u_n_plus_one[i] = u_n[id_full];
-    }
+    else
+      u_n_plus_one[i] = u_n[i];
+    
   }
 }
