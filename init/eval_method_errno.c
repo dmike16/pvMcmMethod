@@ -23,12 +23,12 @@ eval_method_errno(const float *u_appx, const float *u_exact,int dim_vec)
       norm_inf = tmp;
     if(fabs(u_appx[i]) > max_uap)
       max_uap = fabs(u_appx[i]);
-    if(fabs(u_exact[i]) > max_uap)
+    if(fabs(u_exact[i]) > max_u)
       max_u = fabs(u_exact[i]);
   }
   
   
-  fprintf(stdout,"The Nom Inf: ||u(x,t)-v(x,t)|| = %e\n",norm_inf);
+  fprintf(stdout,"The Nom Inf: ||u(x,t)-v(x,t)|| = %.2e\n",norm_inf);
   fprintf(stdout,"The Max of u apprx:  %.4f\n",max_uap);
   fprintf(stdout,"The Max of u      :  %.4f\n",max_u);
 
