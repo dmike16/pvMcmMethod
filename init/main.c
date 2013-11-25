@@ -452,7 +452,7 @@ main(int argc, char *argv[])
   fprintf(stdout,"  °n        Axes Range         Spatial Step\n");
   for( i=0; i < dim_space; i++)
     fprintf(stdout," %3d      "      "  [%.2f,%.2f]        "
-	    "DeltaX=%.2f\n",i+1,first[i],last[i],step[i]);
+	    "DeltaX=%.2e\n",i+1,first[i],last[i],step[i]);
   fprintf(stdout,"TIMEOUT = %.2f\n",timeto);
   fprintf(stdout,"**********************************\n");
   fprintf(stdout,"Initial Condition (IC): paraboloide with radius %.2f\n",radius);
