@@ -220,8 +220,20 @@ pvschema_core(int dim_space,int grid_size,int dim_nod,float *u_n_plus_one,
 
   register int i;
 
+  // Install handler for SIGDIM
+
+  struct sigaction sa,sa_def;
+
+  memset(&sa, 0, sizeof(sa));
+  sa.sa_handler = handler_sigdim;
+  sigaction(SIGDIM, &sa, &sa_def);
+  
   if(dim_space != 3)
     raise(SIGDIM);
+  
+  // Reinstall the deafult action
+  
+  sigaction(SIGDIM, &sa_def, NULL);
   
   int index[DIM_SPACE];
   float Du[DIM_SPACE];

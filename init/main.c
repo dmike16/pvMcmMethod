@@ -15,7 +15,6 @@
 #include <sys/uio.h>
 #include <unistd.h>
 #include <errno.h>
-#include <signal.h>
 #include <time.h>
 #include "grid.h"
 #include "u0.h"
@@ -23,7 +22,6 @@
 #include "interpol_fun.h"
 #include "eval_ic_on_grid.h"
 #include "eval_method_errno.h"
-#include "signal_dim.h"
 #include "pvschema_core.h"
 #include "vector_copy.h"
 
@@ -465,12 +463,6 @@ main(int argc, char *argv[])
 
   // Eval initial func on grid points	
   nod_values = eval_ic_on_grid(grid_size,dim_space,dim_nod,g_nod,u_0,radius);
-  
-  // Install handler for SIGDIM
-  struct sigaction sa;
-  memset(&sa, 0, sizeof(sa));
-  sa.sa_handler = handler_sigdim;
-  sigaction(SIGDIM, &sa, NULL);
   
   // MCM method
   int tot_iter;	

@@ -9,6 +9,6 @@
 
 void handler_sigdim(int signal)
 {
-  fprintf(stderr,"Error incorrect instaction maybe wrong dimension\n Chech the manual to use this program\n");
+  fprintf(stderr,"\nError incorrect instaction maybe wrong dimension\n Chech the manual to use this program\n");
   abort();
 }
