@@ -8,6 +8,7 @@
 #include <stdlib.h>
 #include <math.h>
 #include <signal.h>
+#include <string.h>
 #include "grid.h"
 #include "interpol_fun.h"
 #include "pvschema_core.h"
