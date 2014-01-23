@@ -28,6 +28,7 @@
 #define TOL 10E-07
 #define _NLS 36
 #define _check_time(a,b) if((a) > (b))(a)=(b)
+#define pi 3.141592654f
 
 #define _digits(x,y,k)				\
   k = x;  	     \
@@ -379,6 +380,7 @@ static char
 
 
 float timeto;
+float v0;
 
 int 
 main(int argc, char *argv[])
@@ -492,6 +494,8 @@ main(int argc, char *argv[])
   fprintf(stdout,"The Sphere will collapse at the time: %.2f\n",
 	  radius*radius/(2.00f*(dim_space-1)));
 
+  float r0=1.1966f;
+  v0=(4.00f/3.00f)*pi*powf(r0,3);
   //MCM method iteration
   do{
     tot_iter =  timeto/delta_t;
