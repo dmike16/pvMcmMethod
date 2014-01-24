@@ -5,6 +5,9 @@
 
 extern float timeto;
 
+extern float extract_radius_sphere(float radius, float exp_smooth,
+				   float level_set);
+
 inline float 
 u_sphere(int n, const float *point, float radius)
 {
