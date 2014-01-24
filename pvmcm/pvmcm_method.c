@@ -16,7 +16,7 @@
 #include "out_boundary.h"
 #include "out_of_grid_check.h"
 
-#define pi 3.141592654f
+
 #define DIM_SPACE  3
 #define NUM_VEC    2
 #define C          0.1f
@@ -146,37 +146,34 @@ mcm_above_threshold(const int index[], float ni[][NUM_VEC], const float *u_n,
   float I_n_point[DIM_SPACE];
   float rho = _step(delta_t);
   float u_mcm = 0.0f;
-  float c_tmp = 4.00f*pi/(3.00f*v0);
-  float exp = 2.00f/3.00f;
-  float c = 2.00f*powf(c_tmp,exp);
-  
+    
   
   //Direction (+ni1 +ni2)
-  I_n_point[0] = x[0]*(1-c*delta_t)+rho*(ni[0][0]+ni[0][1]);
-  I_n_point[1] = x[1]*(1-c*delta_t)+rho*(ni[1][0]+ni[1][1]);
-  I_n_point[2] = x[2]*(1-c*delta_t)+rho*(ni[2][0]+ni[2][1]);
+  I_n_point[0] = x[0]*(1-vol_preserv*delta_t)+rho*(ni[0][0]+ni[0][1]);
+  I_n_point[1] = x[1]*(1-vol_preserv*delta_t)+rho*(ni[1][0]+ni[1][1]);
+  I_n_point[2] = x[2]*(1-vol_preserv*delta_t)+rho*(ni[2][0]+ni[2][1]);
   out_of_grid_check(DIM_SPACE,first,last,I_n_point);
   u_mcm += interpol_fun_discrete(DIM_SPACE,dim_nod,g_nod,I_n_point,
 				 first,step,u_n);
 
   //Direction (-ni1 + ni2)
-  I_n_point[0] = x[0]*(1-c*delta_t)+rho*(-ni[0][0]+ni[0][1]);
-  I_n_point[1] = x[1]*(1-c*delta_t)+rho*(-ni[1][0]+ni[1][1]);
-  I_n_point[2] = x[2]*(1-c*delta_t)+rho*(-ni[2][0]+ni[2][1]);
+  I_n_point[0] = x[0]*(1-vol_preserv*delta_t)+rho*(-ni[0][0]+ni[0][1]);
+  I_n_point[1] = x[1]*(1-vol_preserv*delta_t)+rho*(-ni[1][0]+ni[1][1]);
+  I_n_point[2] = x[2]*(1-vol_preserv*delta_t)+rho*(-ni[2][0]+ni[2][1]);
   out_of_grid_check(DIM_SPACE,first,last,I_n_point);
   u_mcm += interpol_fun_discrete(DIM_SPACE,dim_nod,g_nod,I_n_point,
 				 first,step,u_n);
   //Direction (+ni1 - ni2)
-  I_n_point[0] = x[0]*(1-c*delta_t)+rho*(ni[0][0]-ni[0][1]);
-  I_n_point[1] = x[1]*(1-c*delta_t)+rho*(ni[1][0]-ni[1][1]);
-  I_n_point[2] = x[2]*(1-c*delta_t)+rho*(ni[2][0]-ni[2][1]);
+  I_n_point[0] = x[0]*(1-vol_preserv*delta_t)+rho*(ni[0][0]-ni[0][1]);
+  I_n_point[1] = x[1]*(1-vol_preserv*delta_t)+rho*(ni[1][0]-ni[1][1]);
+  I_n_point[2] = x[2]*(1-vol_preserv*delta_t)+rho*(ni[2][0]-ni[2][1]);
   out_of_grid_check(DIM_SPACE,first,last,I_n_point);
   u_mcm += interpol_fun_discrete(DIM_SPACE,dim_nod,g_nod,I_n_point,
 				 first,step,u_n);
   //Direction (-ni1 - ni2)
-  I_n_point[0] = x[0]*(1-c*delta_t)+rho*(-ni[0][0]-ni[0][1]);
-  I_n_point[1] = x[1]*(1-c*delta_t)+rho*(-ni[1][0]-ni[1][1]);
-  I_n_point[2] = x[2]*(1-c*delta_t)+rho*(-ni[2][0]-ni[2][1]);
+  I_n_point[0] = x[0]*(1-vol_preserv*delta_t)+rho*(-ni[0][0]-ni[0][1]);
+  I_n_point[1] = x[1]*(1-vol_preserv*delta_t)+rho*(-ni[1][0]-ni[1][1]);
+  I_n_point[2] = x[2]*(1-vol_preserv*delta_t)+rho*(-ni[2][0]-ni[2][1]);
   out_of_grid_check(DIM_SPACE,first,last,I_n_point);
   u_mcm += interpol_fun_discrete(DIM_SPACE,dim_nod,g_nod,I_n_point,
 				 first,step,u_n);

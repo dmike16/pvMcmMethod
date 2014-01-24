@@ -380,7 +380,7 @@ static char
 
 
 float timeto;
-float v0;
+float vol_preserv;
 
 int 
 main(int argc, char *argv[])
@@ -494,9 +494,13 @@ main(int argc, char *argv[])
   fprintf(stdout,"The Sphere will collapse at the time: %.2f\n",
 	  radius*radius/(2.00f*(dim_space-1)));
 
-  float r0=1.1966f;
-  v0=(4.00f/3.00f)*pi*powf(r0,3);
-  //MCM method iteration
+  // Eval the volume preserving constant for the sphere
+  float r0= extract_radius_sphere(radius,4,level);
+  fprintf(stdout,"r0=%f\n",r0);
+  float v0=(4.00f/3.00f)*pi*powf(r0,3);
+  vol_preserv = 2.00f*powf(4.00f*pi/(3.00f*v0),2.00f/3.00f);
+  
+  //PVMCM method iteration
   do{
     tot_iter =  timeto/delta_t;
     memset(bar,' ',18);
