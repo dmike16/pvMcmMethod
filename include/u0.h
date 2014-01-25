@@ -3,6 +3,9 @@
 
 #include <math.h>
 
+extern float extract_radius_sphere(float radius, float exp_smooth,
+				   float level_set);
+
 inline float 
 u_0(int n, const float *point, float radius)
 {

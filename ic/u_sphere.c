@@ -6,9 +6,3 @@
 #include "u_sphere.h"
 
 extern float u_sphere(int n, const float *point, float radius);
-
-float 
-extract_radius_sphere(float radius,float exp_smooth,float level_set)
-{
-  return sqrt(radius*radius-powf(level_set,1.00f/exp_smooth)*radius*radius);
-}
