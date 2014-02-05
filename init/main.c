@@ -26,7 +26,7 @@
 #include "vector_copy.h"
 
 #define TOL 10E-07
-#define _NLS 36
+#define _NLS 37
 #define _check_time(a,b) if((a) > (b))(a)=(b)
 #define pi 3.141592654f
 
@@ -292,6 +292,10 @@ autogenerate_octave_script(char *default_name,int dim_nod,
  
  vec_next->iov_base = "figure()\n";
  vec_next->iov_len = 9;
+ ++vec_next;
+
+ vec_next->iov_base = "view(-38,20);\n";
+ vec_next->iov_len = 14;
  ++vec_next;
 
  vec_next->iov_base = axis;
