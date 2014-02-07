@@ -9,6 +9,11 @@
 #include <math.h>
 #include <signal.h>
 #include <string.h>
+#include <errno.h>
+#include <fcntl.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <unistd.h>
 #include "grid.h"
 #include "interpol_fun.h"
 #include "pvschema_core.h"
@@ -30,6 +35,19 @@
       var -= cond;              \
       add++;	                \
   } while(var >= cond)
+
+#define CHECK_OPEN(x) \
+  if((x) == -1)       \
+    { perror("open"); \
+      abort();}
+
+#define __CLOSE_THE_STRING(x)				\
+  do{ char *__skip_until_the_last = data;		\
+    while(__skip_until_the_last < data+write_byte-1)	\
+      ++__skip_until_the_last;				\
+    *__skip_until_the_last='\0';}while(0)   				
+
+static char digits[35];				
 
 static inline int
 index_full(int dim_nod,int index[])
@@ -134,7 +152,7 @@ eval_direction_vector(const float Du[],float ni[][NUM_VEC])
 
 
 static inline float
-mcm_above_threshold(const int index[], float ni[][NUM_VEC], const float *u_n,
+pvmcm_above_threshold(const int index[], float ni[][NUM_VEC], const float *u_n,
 	       float delta_t,const float *step,const float *first,
 	       const float *last,int dim_nod, gridType g_nod)
 {
@@ -183,34 +201,58 @@ mcm_above_threshold(const int index[], float ni[][NUM_VEC], const float *u_n,
 
  }
 
+static inline char
+*extract_triple_index(char *ptr, int *index)
+{ int i;
 
-static inline float 
-mcm_below_threshold(int *index, int dim_nod, const float *u_n)
+  if( *ptr == '\0')
+    return ptr;
+  else 
+    { for(i = 0; i < DIM_SPACE; i++)
+	{ errno = 0;
+	  index[i] = (int)strtol(ptr,&ptr,10);
+	  // fprintf(stdout,"[%d]= %d\n",i,index[i]);
+	  if(errno == ERANGE)
+	    fprintf(stdout,"Invalid conversion\n");
+	}
+      return ptr;
+    }
+}
+
+static float 
+*pvmcm_below_threshold(const char *data, int *index, int dim_nod, float *u_new)
 {
 
   register int i;
   int IF;
   float u_mcm = 0.0f;
-
-  for(i = 0; i < DIM_SPACE; i++){
-    ++index[i];
-    IF = index_full(dim_nod,index);
-    --index[i];
-    
-    u_mcm += u_n[IF];
-
-    --index[i];
-    IF = index_full(dim_nod,index);
-    ++index[i];
-    
-    u_mcm += u_n[IF];
-  }
-
-  u_mcm = u_mcm/6.00f;
+  char *ptr;
+  ptr=(char*)data;
   
-  return u_mcm;
+  while(*ptr != '\0')
+    { ptr = extract_triple_index(ptr,index);
+      for(i = 0; i < DIM_SPACE; i++){
+	++index[i];
+	IF = index_full(dim_nod,index);
+	--index[i];
 
+	u_mcm += u_new[IF];
+	    
+	--index[i];
+	IF = index_full(dim_nod,index);
+	++index[i];
+	
+	u_mcm += u_new[IF];
+      }
+      
+      IF = index_full(dim_nod,index);
+      u_new[IF] = u_mcm/6.00f;
+      u_mcm = 0.0f;
+    }
+  return u_new;
 }
+ 
+    
 
 
 
@@ -238,9 +280,15 @@ pvschema_core(int dim_space,int grid_size,int dim_nod,float *u_n_plus_one,
   sigaction(SIGDIM, &sa_def, NULL);
   
   int index[DIM_SPACE];
+  int fd;
   float Du[DIM_SPACE];
   float ni[DIM_SPACE][NUM_VEC];
 
+  fd = open("index-tmp.txt",O_RDWR | O_CREAT | O_APPEND, 0666);
+  CHECK_OPEN(fd);
+  unlink("index-tmp.txt");
+
+  size_t write_byte = 0;
   
   for(i = 0; i < grid_size; i++){
     index_split(i,index,dim_nod);
@@ -248,11 +296,15 @@ pvschema_core(int dim_space,int grid_size,int dim_nod,float *u_n_plus_one,
      {
 	eval_gradient(dim_nod,index,Du,u_n,step[0]);
 	if(norm_R3(Du) <= C*step[0] || p1p3(Du) <= C*step[0])
-	  u_n_plus_one[i] = mcm_below_threshold(index,dim_nod,u_n);
+	  { u_n_plus_one[i] = u_n[i];
+	    sprintf(digits,"%d %d %d\n",index[0],index[1],index[2]);
+	    write_byte += write(fd, digits, strlen(digits));
+	  }
+				
 	else
 	  { 
 	    eval_direction_vector(Du,ni);
-	    u_n_plus_one[i] = mcm_above_threshold(index,ni,u_n,delta_t,step,
+	    u_n_plus_one[i] = pvmcm_above_threshold(index,ni,u_n,delta_t,step,
 						  first,last,dim_nod,g_nod);
 	  }
      }
@@ -260,4 +312,27 @@ pvschema_core(int dim_space,int grid_size,int dim_nod,float *u_n_plus_one,
       u_n_plus_one[i] = u_n[i];
     
   }
+
+  
+  // If there are some ponits below the thresold we use an "ad hoc" method
+  if(write_byte != 0)
+    {     
+      lseek(fd,0,SEEK_SET);
+      char *data = malloc(write_byte+1);
+
+      if(data == NULL)
+	{ perror("malloc");
+	  abort();
+	}
+
+      if((int)(read(fd,data,write_byte))== -1)
+	{ perror("read");
+	  exit(1);
+	}
+      __CLOSE_THE_STRING(data);
+      u_n_plus_one = pvmcm_below_threshold(data,index,dim_nod,u_n_plus_one);
+      
+      free(data);
+    }
+  close(fd);
 }
