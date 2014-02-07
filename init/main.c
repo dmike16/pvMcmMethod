@@ -21,7 +21,7 @@
 #include "u_sphere.h"
 #include "interpol_fun.h"
 #include "eval_ic_on_grid.h"
-#include "eval_method_errno.h"
+//#include "eval_method_errno.h"
 #include "pvschema_core.h"
 #include "vector_copy.h"
 
@@ -547,7 +547,7 @@ main(int argc, char *argv[])
     }
 
     //Eval the Norm infinity of the Error  
-    eval_method_errno(u_n_plus_one,u_exact,grid_size);
+    //eval_method_errno(u_n_plus_one,u_exact,grid_size);
 
     //Generate octave script in order to plot the solution
     autogenerate_octave_script(default_name,dim_nod,first,last,level,dim_space);
