@@ -31,3 +31,7 @@
 
 # Debug file
 *.log
+
+# Eclipse project
+.cproject
+.project
