@@ -35,3 +35,10 @@
 # Eclipse project
 .cproject
 .project
+
+#Qt project
+pvmcm.config
+pvmcm.creator
+pvmcm.files
+pvmcm.includes
+pvmcm.creator.user
