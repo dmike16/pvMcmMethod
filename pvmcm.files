@@ -39,3 +39,4 @@ scripts/Makefile.lib
 Kbuild
 Makefile
 README
+ini.dat
