@@ -21,7 +21,7 @@
 #include "u_sphere.h"
 #include "interpol_fun.h"
 #include "eval_ic_on_grid.h"
-//#include "eval_method_errno.h"
+#include "eval_method_errno.h"
 #include "pvschema_core.h"
 #include "vector_copy.h"
 
@@ -383,8 +383,7 @@ static char
 }
 
 
-float timeto;
-float vol_preserv;
+float timeto,level,v0;
 
 int 
 main(int argc, char *argv[])
@@ -402,7 +401,7 @@ main(int argc, char *argv[])
   int dim_space;
   float *first,*last,*step;
   float *nod_values;
-  float level,time,radius;
+  float time,radius;
 
   // Check the correct usage of the programm	
   if (argc != 2 && argc != 3){
@@ -490,20 +489,19 @@ main(int argc, char *argv[])
   make_output_file(u_n,"arch/IC.dat",grid_size);
   fprintf(stdout," FILE CREATED \n");
 
-  //Eval the exact solution and the exact collapse time
-  float *u_exact;
+  //Eval the solution pvmcm sphere and the exact collapse time
+  float *u_vp_sphere = malloc(grid_size*sizeof(float));
 
   fprintf(stdout,"Time to eval : %f\n",timeto);
-  u_exact = eval_ic_on_grid(grid_size,dim_space,dim_nod,g_nod,u_sphere,radius);
   fprintf(stdout,"The Sphere will collapse at the time: %.2f\n",
 	  radius*radius/(2.00f*(dim_space-1)));
 
   // Eval the volume preserving constant for the sphere
-  float r0= extract_radius_sphere(radius,4,level);
+  //float r0= extract_radius_sphere(radius,4,level);
+  float r0 = sqrt(radius*radius -level);
   fprintf(stdout,"r0=%f\n",r0);
-  float v0=(4.00f/3.00f)*pi*powf(r0,3);
-  vol_preserv = 2.00f*powf(4.00f*pi/(3.00f*v0),2.00f/3.00f);
-  
+  v0=(4.00f/3.00f)*pi*powf(r0,3);
+  float vol_preserv = 2.00f*powf(4.00f*pi/(3.00f*v0),2.00f/3.00f);
   //PVMCM method iteration
   do{
     tot_iter =  timeto/delta_t;
@@ -519,6 +517,8 @@ main(int argc, char *argv[])
       fflush(stdout);
       pvschema_core(dim_space,grid_size,dim_nod,u_n_plus_one,u_n,
 		    step,delta_t,g_nod,first,last);
+      pvschema_sphere(dim_space,grid_size,dim_nod,u_vp_sphere,u_n,
+      		    step,delta_t,g_nod,first,last,vol_preserv);
       time += delta_t;
       _check_time(time,timeto);
       if (time == timeto){
@@ -547,7 +547,7 @@ main(int argc, char *argv[])
     }
 
     //Eval the Norm infinity of the Error  
-    //eval_method_errno(u_n_plus_one,u_exact,grid_size);
+    eval_method_errno(u_n_plus_one,u_vp_sphere,grid_size);
 
     //Generate octave script in order to plot the solution
     autogenerate_octave_script(default_name,dim_nod,first,last,level,dim_space);
@@ -572,7 +572,7 @@ main(int argc, char *argv[])
   free(nod_values);
   free(u_n);
   free(u_n_plus_one);
-  free(u_exact);
+  free(u_vp_sphere);
   free(bar);
     
   return 0;
