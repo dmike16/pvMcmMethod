@@ -25,7 +25,7 @@ delta_func(float x, float epsilon){
 	if(x < -epsilon)
 		return 0.00f;
 	else if(x >= -epsilon && x <= epsilon)
-		return 1.00f/(2.00f*epsilon)+ (1.00f/(2.00f*epsilon))*cos(PI*x/epsilon);
+		return 1.00f/(2.00f*epsilon)+ (1.00f/(2.00f*epsilon))*cos((PI*x)/epsilon);
 	else
 		return 0.00f;
 }

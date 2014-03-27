@@ -18,12 +18,14 @@
 #include <time.h>
 #include "grid.h"
 #include "u0.h"
+#include "u0_Torus.h"
 #include "u_sphere.h"
 #include "interpol_fun.h"
 #include "eval_ic_on_grid.h"
-#include "eval_method_errno.h"
+//#include "eval_method_errno.h"
 #include "pvschema_core.h"
 #include "vector_copy.h"
+#include "heaviSide.h"
 
 #define TOL 10E-07
 #define _NLS 37
@@ -401,7 +403,7 @@ main(int argc, char *argv[])
   int dim_space;
   float *first,*last,*step;
   float *nod_values;
-  float time,radius;
+  float time,radius[2];
 
   // Check the correct usage of the programm	
   if (argc != 2 && argc != 3){
@@ -423,7 +425,6 @@ main(int argc, char *argv[])
   if((read (fd,data,length))== -1)
     fprintf(stderr,"Error in reading the file %s\n",argv[1]);
   close(fd);
-  
   tmp = strtok(data,"\n");
   timeto = atof(tmp);
   tmp = strtok(NULL, "\n");
@@ -431,16 +432,20 @@ main(int argc, char *argv[])
   tmp = strtok(NULL, "\n");
   dim_nod = atoi(tmp);
   tmp = strtok(NULL,"\n");
-  radius = atof(tmp);
+  radius[0] = atof(tmp);
+  tmp = strtok(NULL,"\n");
+  radius[1] = atof(tmp);
   tmp = strtok(NULL,"\n");
   level = atof(tmp);
   first = (float*) malloc(dim_space*sizeof(float));
   last = (float*) malloc(dim_space*sizeof(float));
-  for (i = 0; (tmp = strtok(NULL, "\n")) != NULL ;i++){
-    first[i]=(float)atof(tmp);
+  for (i = 0; (tmp = strtok(NULL, "\n")) != NULL && i < dim_space;i++){
+
+	first[i]=(float)atof(tmp);
     last[i] = (float)atof(tmp = strtok(NULL,"\n"));
+
   }
-  
+
   free((void*)data);
   //End read from the file
   
@@ -458,7 +463,7 @@ main(int argc, char *argv[])
 	    "DeltaX=%.2e\n",i+1,first[i],last[i],step[i]);
   fprintf(stdout,"TIMEOUT = %.2f\n",timeto);
   fprintf(stdout,"**********************************\n");
-  fprintf(stdout,"Initial Condition (IC): paraboloide with radius %.2f\n",radius);
+  //fprintf(stdout,"Initial Condition (IC): paraboloide with radius %.2f\n",radius);
   fprintf(stdout,"Level Set : %.2f\n",level);
   
   // Create the grid in R^n
@@ -467,7 +472,8 @@ main(int argc, char *argv[])
   fprintf(stdout,"Grid Size: %d\n",grid_size);
 
   // Eval initial func on grid points	
-  nod_values = eval_ic_on_grid(grid_size,dim_space,dim_nod,g_nod,u_0,radius);
+  //nod_values = eval_ic_on_grid(grid_size,dim_space,dim_nod,g_nod,u_0,radius);
+  nod_values = eval_ic_on_grid(grid_size,dim_space,dim_nod,g_nod,u0_torus,radius);
   
   // MCM method
   int tot_iter;	
@@ -490,18 +496,22 @@ main(int argc, char *argv[])
   fprintf(stdout," FILE CREATED \n");
 
   //Eval the solution pvmcm sphere and the exact collapse time
-  float *u_vp_sphere = malloc(grid_size*sizeof(float));
+  //float *u_vp_sphere = malloc(grid_size*sizeof(float));
 
   fprintf(stdout,"Time to eval : %f\n",timeto);
-  fprintf(stdout,"The Sphere will collapse at the time: %.2f\n",
-	  radius*radius/(2.00f*(dim_space-1)));
+  //fprintf(stdout,"The Sphere will collapse at the time: %.2f\n",
+  //	  radius*radius/(2.00f*(dim_space-1)));
 
   // Eval the volume preserving constant for the sphere
   //float r0= extract_radius_sphere(radius,4,level);
-  float r0 = sqrt(radius*radius -level);
-  fprintf(stdout,"r0=%f\n",r0);
-  v0=(4.00f/3.00f)*pi*powf(r0,3);
-  float vol_preserv = 2.00f*powf(4.00f*pi/(3.00f*v0),2.00f/3.00f);
+  //float r0 = sqrt((*radius)*(*radius) -level);
+  //fprintf(stdout,"r0=%f\n",r0);
+  //v0=(4.00f/3.00f)*pi*powf(r0,3);
+  //float vol_preserv = 2.00f*powf(4.00f*pi/(3.00f*v0),2.00f/3.00f);
+  float r0 = radius[0]*radius[0] +level;
+  v0 = (2.00f)*pi*pi*r0*radius[1];
+  printf("Volume iniziale che vogliio conser = %.2f",v0);
+  //v0 = 2.00f*powf(4.00f*pi/(3.00f*v0),2.00f/3.00f);
   //PVMCM method iteration
   do{
     tot_iter =  timeto/delta_t;
@@ -515,10 +525,12 @@ main(int argc, char *argv[])
       update_bar(bar,18,i,tot_iter);
       fprintf(stdout,"\r[%s]%d%%",bar,100*i/tot_iter);
       fflush(stdout);
-      pvschema_core(dim_space,grid_size,dim_nod,u_n_plus_one,u_n,
+      vpschema(dim_space,grid_size,dim_nod,u_n_plus_one,u_n,
 		    step,delta_t,g_nod,first,last);
-      pvschema_sphere(dim_space,grid_size,dim_nod,u_vp_sphere,u_n,
-      		    step,delta_t,g_nod,first,last,vol_preserv);
+
+     // vpschema_core(dim_space,grid_size,dim_nod,u_n_plus_one,u_n,
+     // 		    step,delta_t,g_nod,first,last,v0);
+
       time += delta_t;
       _check_time(time,timeto);
       if (time == timeto){
@@ -547,8 +559,13 @@ main(int argc, char *argv[])
     }
 
     //Eval the Norm infinity of the Error  
-    eval_method_errno(u_n_plus_one,u_vp_sphere,grid_size);
+    //eval_method_errno(u_n_plus_one,u_vp_sphere,grid_size);
+    float vf = 0.00f;
+    float eps = 1.5*step[0];
+    for(i=0;i<grid_size;i++)
+    	vf += 1-hvSide(level-u_n_plus_one[i],eps);
 
+    printf("Volume finale= %.2f\n",vf*powf(step[0],3));
     //Generate octave script in order to plot the solution
     autogenerate_octave_script(default_name,dim_nod,first,last,level,dim_space);
     fprintf(stdout,"Script generated, into Dir \"scripts\"\n");
@@ -572,7 +589,7 @@ main(int argc, char *argv[])
   free(nod_values);
   free(u_n);
   free(u_n_plus_one);
-  free(u_vp_sphere);
+  //free(u_vp_sphere);
   free(bar);
     
   return 0;

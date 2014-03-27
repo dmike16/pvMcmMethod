@@ -250,7 +250,7 @@ pvmcm_above_threshold(const int index[], float ni[][NUM_VEC], const float *u_n,
   return u_mcm;
 
  }
-/*
+
 static inline float
 pvmcm_advanction(const int index[], const float *u_n,const float *first,
 	       const float *last, const float *step,float delta_t,
@@ -262,20 +262,19 @@ pvmcm_advanction(const int index[], const float *u_n,const float *first,
 
 
   float I_n_point[DIM_SPACE];
-  float u_adv = 0.0f;
 
-  I_n_point[0] = x[0]*(1-C_v*delta_t);
-  I_n_point[1] = x[1]*(1-C_v*delta_t);
-  I_n_point[2] = x[2]*(1-C_v*delta_t);
+  I_n_point[0] = x[0]*(1.00f-C_v*delta_t);
+  I_n_point[1] = x[1]*(1.00f-C_v*delta_t);
+  I_n_point[2] = x[2]*(1.00f-C_v*delta_t);
   out_of_grid_check(DIM_SPACE,first,last,I_n_point);
-  u_adv = interpol_fun_discrete(DIM_SPACE,dim_nod,g_nod,I_n_point,
+
+  return interpol_fun_discrete(DIM_SPACE,dim_nod,g_nod,I_n_point,
 				 first,step,u_n);
 
 
-  return u_adv;
 
  }
-*/
+
 static inline char
 *extract_triple_index(char *ptr, int *index)
 { int i;
@@ -327,11 +326,35 @@ static float
   return u_new;
 }
  
+static float
+mcm_below_threshold(int *index, int dim_nod,const float *u_n)
+{
 
+  register int i;
+  int IF;
+  float u_mcm = 0.0f;
+
+
+  for(i = 0; i < DIM_SPACE; i++){
+	++index[i];
+	IF = index_full(dim_nod,index);
+	--index[i];
+
+	u_mcm += u_n[IF];
+
+	--index[i];
+	IF = index_full(dim_nod,index);
+	++index[i];
+
+	u_mcm += u_n[IF];
+  }
+
+  return u_mcm/6.00f;
+}
 
 
 void 
-pvschema_core(int dim_space,int grid_size,int dim_nod,float *u_n_plus_one, 
+vpschema(int dim_space,int grid_size,int dim_nod,float *u_n_plus_one,
 	      const float *u_n, const float *step,float delta_t,
 	      gridType g_nod,const float *first,const float *last)
 {
@@ -354,85 +377,90 @@ pvschema_core(int dim_space,int grid_size,int dim_nod,float *u_n_plus_one,
   sigaction(SIGDIM, &sa_def, NULL);
   
   int index[DIM_SPACE];
-  int fd;
+  //int fd;
   float Du[DIM_SPACE];
   float ni[DIM_SPACE][NUM_VEC];
+  float eps = step[0]*1.5f;
+  float I_n = 0.0f;
+  //float C_v = 0.00f;
+  //float vol1 = 0.0f,vol2 = 0.0f;
   float* w = malloc(grid_size*sizeof(float));
-
+/*
   fd = open("index-tmp.txt",O_RDWR | O_CREAT | O_APPEND, 0666);
   CHECK_OPEN(fd);
   unlink("index-tmp.txt");
 
-  size_t write_byte = 0;
-  
+   size_t write_byte = 0;
+*/
   for(i = 0; i < grid_size; i++){
     index_split(i,index,dim_nod);
     if((out_boundary(DIM_SPACE,dim_nod,index)))
      {
 	eval_gradient(dim_nod,index,Du,u_n,step[0]);
 	if(norm_R3(Du) <= C*step[0] || p1p3(Du) <= C*step[0])
-	  { w[i] = u_n[i];
-	    sprintf(digits,"%d %d %d\n",index[0],index[1],index[2]);
-	    write_byte += write(fd, digits, strlen(digits));
+	  { //w[i] = u_n[i];
+	    //sprintf(digits,"%d %d %d\n",index[0],index[1],index[2]);
+	    //write_byte += write(fd, digits, strlen(digits));
+		w[i] = (mcm_below_threshold(index,dim_nod,u_n)-u_n[i])*(1/(step[0]*step[0]));
+
 	  }
 				
 	else
 	  { 
 	    eval_direction_vector(Du,ni);
-	    w[i] = mcm_above_threshold(index,ni,u_n,delta_t,step,
-						  first,last,dim_nod,g_nod);
+	    w[i] = (mcm_above_threshold(index,ni,u_n,delta_t,step,
+						  first,last,dim_nod,g_nod) -u_n[i])*(1/delta_t);
+
 	  }
      }
     else
       w[i] = u_n[i];
     
-  }
+    I_n += (w[i]*delta_func((level-u_n[i]),eps));
 
-  
-  // If there are some points below the threshold we use an "ad hoc" method
+   //vol1 += 1-hvSide(level-u_n[i],eps);
+   //vol2 += 1-hvSide(level-w[i],eps);
+
+
+  }
+ /*
   if(write_byte != 0)
-    {     
-      lseek(fd,0,SEEK_SET);
-      char *data = malloc(write_byte+1);
+      {
+        lseek(fd,0,SEEK_SET);
+        char *data = malloc(write_byte+1);
 
-      if(data == NULL)
-	{ perror("malloc");
-	  abort();
-	}
+        if(data == NULL)
+  	{ perror("malloc");
+  	  abort();
+  	}
 
-      if((int)(read(fd,data,write_byte))== -1)
-	{ perror("read");
-	  exit(1);
-	}
-      __CLOSE_THE_STRING(data);
-      w = pvmcm_below_threshold(data,index,dim_nod,w);
-      
-      free(data);
-    }
-  close(fd);
+        if((int)(read(fd,data,write_byte))== -1)
+  	{ perror("read");
+  	  exit(1);
+  	}
+        __CLOSE_THE_STRING(data);
+        w = pvmcm_below_threshold(data,index,dim_nod,w);
 
-  //float C_v = 0.00f;
-  float eps = step[0]*(3.00f/2.00f);
-  //float vol1 = 0.0f,vol2 = 0.0f;
-  float I_n = 0.0f;
+        free(data);
+      }
+    close(fd);
+*/
+ // for (i = 0; i < grid_size; i++){
+	  //I_n = (w[i]*delta_func(level-u_n[i],eps));
+	  //vol1 += 1-hvSide(level-u_n[i],eps);
+	  //vol2 += 1-hvSide(level-w[i],eps);
+	  //v0 += 1-hvSide(level-u_n[i],eps);
+  //}
 
-  /*
-  for(i = 0; i < grid_size; i++){
-	  vol1 += 1-hvSide(level-u_n[i],eps);
-	  vol2 += 1-hvSide(level-w[i],eps);
-  }
-  */
+  printf("\n Prima I_n = %.2f",I_n);
+  I_n = -(I_n * powf(step[0],DIM_SPACE))/(3.00f*v0);
 
-  for(i = 0; i < grid_size; i++)
-	  I_n += (w[i]*delta_func((level-u_n[i]),eps));
-
-  I_n = (I_n * powf(step[0],DIM_SPACE))/(3.00f*v0);
-
-
-  /*
-  C_v = (vol1-vol2) * powf(step[0],DIM_SPACE);
-
-
+  //vol1 *= powf(step[0],DIM_SPACE);
+  //vol2 *= powf(step[0],DIM_SPACE);
+  //printf("\nVol1 = %.2f , Vol2 = %.2f \n",vol1,vol2);
+  //C_v = (vol1-vol2);
+  printf("\n C_n = %.2f\n",I_n);
+/*
   for(i = 0; i < grid_size; i++){
       index_split(i,index,dim_nod);
       if((out_boundary(DIM_SPACE,dim_nod,index)))
@@ -442,15 +470,16 @@ pvschema_core(int dim_space,int grid_size,int dim_nod,float *u_n_plus_one,
         u_n_plus_one[i] = w[i];
 
     }
-    */
+*/
 free(w);
 
-pvschema_sphere(dim_space,grid_size,dim_nod,u_n_plus_one,u_n,
+vpschema_core(dim_space,grid_size,dim_nod,u_n_plus_one,u_n,
       		    step,delta_t,g_nod,first,last,I_n);
+
 }
 
 void
-pvschema_sphere(int dim_space,int grid_size,int dim_nod,float *u_n_plus_one,
+vpschema_core(int dim_space,int grid_size,int dim_nod,float *u_n_plus_one,
 	      const float *u_n, const float *step,float delta_t,
 	      gridType g_nod,const float *first,const float *last, float I_n)
 {
@@ -492,6 +521,7 @@ pvschema_sphere(int dim_space,int grid_size,int dim_nod,float *u_n_plus_one,
 	  { u_n_plus_one[i] = u_n[i];
 	    sprintf(digits,"%d %d %d\n",index[0],index[1],index[2]);
 	    write_byte += write(fd, digits, strlen(digits));
+		//u_n_plus_one[i] = mcm_below_threshold(index,dim_nod,u_n);
 	  }
 
 	else
