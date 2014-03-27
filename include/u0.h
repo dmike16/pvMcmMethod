@@ -3,15 +3,15 @@
 
 #include <math.h>
 
-extern float extract_radius_sphere(float radius, float exp_smooth,
+extern float extract_radius_sphere(const float *radius, float exp_smooth,
 				   float level_set);
 
 inline float 
-u_0(int n, const float *point, float radius)
+u_0(int n, const float *point,const  float *radius)
 {
   const float *p;
   float u = 0.00f;
-  float r_two = radius*radius;
+  float r_two = (*radius) * (*radius);
   
   for (p = point; p <point + n; p++)
     u += (*p)*(*p); 

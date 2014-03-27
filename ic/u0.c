@@ -5,10 +5,12 @@
 
 #include "u0.h"
 
-extern float u_0(int n, const float *point, float radius);
+extern float u_0(int n, const float *point, const float *radius);
 
 float 
-extract_radius_sphere(float radius,float exp_smooth,float level_set)
+extract_radius_sphere(const float *radius,float exp_smooth,float level_set)
 {
-  return sqrt(radius*radius-powf(level_set,1.00f/exp_smooth)*radius*radius);
+	float r = *radius;
+
+	return sqrt(r*r-powf(level_set,1.00f/exp_smooth)*r*r);
 }
