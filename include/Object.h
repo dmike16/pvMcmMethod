@@ -1,15 +1,26 @@
 #ifndef OBJECT_H
 #define OBJECT_H
 
-extern const void *_Object;
+#ifndef Method_Type
+#define Method_Type
 
-void *new (const void *class,...);
+typedef void (*Method) ();
+
+#endif
+
+extern const void *_Object;
+#define Object (_Object ? _Object : (_Object = __object()))
+
+struct __Object *new (const void *class,...);
+void *allocate(const void *self);
 void delete (void *self);
+void reclaim(const void *self, Method how);
 int puto (const void *self,FILE *fp);
-int isA (const void *self, const struct __Class *class);
-int isOf (const void *self, const struct __Class *class);
-void *cast (const struct __Class *class,const void *self);
+const void* __object();
+const void* __class();
+Method respondsTo(const void *self, const char *tag);
 
 extern const void *_Class;
+#define Class (_Class ? _Class : (_Class = __class()))
 
 #endif /* header Object.h */
