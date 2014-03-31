@@ -433,8 +433,8 @@ main(int argc, char *argv[])
   dim_nod = atoi(tmp);
   tmp = strtok(NULL,"\n");
   radius[0] = atof(tmp);
-  tmp = strtok(NULL,"\n");
-  radius[1] = atof(tmp);
+  //tmp = strtok(NULL,"\n");
+  //radius[1] = atof(tmp);
   tmp = strtok(NULL,"\n");
   level = atof(tmp);
   first = (float*) malloc(dim_space*sizeof(float));
@@ -472,8 +472,8 @@ main(int argc, char *argv[])
   fprintf(stdout,"Grid Size: %d\n",grid_size);
 
   // Eval initial func on grid points	
-  //nod_values = eval_ic_on_grid(grid_size,dim_space,dim_nod,g_nod,u_0,radius);
-  nod_values = eval_ic_on_grid(grid_size,dim_space,dim_nod,g_nod,u0_torus,radius);
+  nod_values = eval_ic_on_grid(grid_size,dim_space,dim_nod,g_nod,u_0,radius);
+  //nod_values = eval_ic_on_grid(grid_size,dim_space,dim_nod,g_nod,u0_torus,radius);
   
   // MCM method
   int tot_iter;	
@@ -504,12 +504,12 @@ main(int argc, char *argv[])
 
   // Eval the volume preserving constant for the sphere
   //float r0= extract_radius_sphere(radius,4,level);
-  //float r0 = sqrt((*radius)*(*radius) -level);
-  //fprintf(stdout,"r0=%f\n",r0);
-  //v0=(4.00f/3.00f)*pi*powf(r0,3);
+  float r0 = sqrt((*radius)*(*radius) -level);
+  fprintf(stdout,"r0=%f\n",r0);
+  v0=(4.00f/3.00f)*pi*powf(r0,3);
   //float vol_preserv = 2.00f*powf(4.00f*pi/(3.00f*v0),2.00f/3.00f);
-  float r0 = radius[0]*radius[0] +level;
-  v0 = (2.00f)*pi*pi*r0*radius[1];
+  //float r0 = radius[0]*radius[0] +level;
+  //v0 = (2.00f)*pi*pi*r0*radius[1];
   printf("Volume iniziale che vogliio conser = %.2f",v0);
   //v0 = 2.00f*powf(4.00f*pi/(3.00f*v0),2.00f/3.00f);
   //PVMCM method iteration
