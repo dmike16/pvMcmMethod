@@ -251,7 +251,7 @@ pvmcm_above_threshold(const int index[], float ni[][NUM_VEC], const float *u_n,
 
  }
 
-static inline float
+/*static inline float
 pvmcm_advanction(const int index[], const float *u_n,const float *first,
 	       const float *last, const float *step,float delta_t,
 	       float C_v, int dim_nod, gridType g_nod)
@@ -274,7 +274,7 @@ pvmcm_advanction(const int index[], const float *u_n,const float *first,
 
 
  }
-
+*/
 static inline char
 *extract_triple_index(char *ptr, int *index)
 { int i;
@@ -452,15 +452,13 @@ vpschema(int dim_space,int grid_size,int dim_nod,float *u_n_plus_one,
 	  //v0 += 1-hvSide(level-u_n[i],eps);
   //}
 
-  printf("\n Prima I_n = %.2f",I_n);
   I_n = -(I_n * powf(step[0],DIM_SPACE))/(3.00f*v0);
 
   //vol1 *= powf(step[0],DIM_SPACE);
   //vol2 *= powf(step[0],DIM_SPACE);
   //printf("\nVol1 = %.2f , Vol2 = %.2f \n",vol1,vol2);
   //C_v = (vol1-vol2);
-  printf("\n C_n = %.2f\n",I_n);
-/*
+  /*
   for(i = 0; i < grid_size; i++){
       index_split(i,index,dim_nod);
       if((out_boundary(DIM_SPACE,dim_nod,index)))
