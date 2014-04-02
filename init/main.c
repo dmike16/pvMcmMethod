@@ -510,7 +510,7 @@ main(int argc, char *argv[])
   //float vol_preserv = 2.00f*powf(4.00f*pi/(3.00f*v0),2.00f/3.00f);
   //float r0 = radius[0]*radius[0] +level;
   //v0 = (2.00f)*pi*pi*r0*radius[1];
-  printf("Volume iniziale che vogliio conser = %.2f",v0);
+  printf("V0 = %.2f\n",v0);
   //v0 = 2.00f*powf(4.00f*pi/(3.00f*v0),2.00f/3.00f);
   //PVMCM method iteration
   do{
@@ -571,6 +571,12 @@ main(int argc, char *argv[])
     fprintf(stdout,"Script generated, into Dir \"scripts\"\n");
     fprintf(stdout,"Time used by CPU : %g sec.\n",(clock()-start_clock)/
 	    (double) CLOCKS_PER_SEC);
+    fprintf(stdout,"Do you want to plot the Solution(y/n)?\n");
+    if((s=getchar())=='\n')
+          s = getchar();
+    if(s == 'y')
+    	if((system("octave scripts/plotSurface.m")))
+    		fprintf(stderr,"Erro in call Octave script\n");
     fprintf(stdout,"Do you want to helve delta T(y/n)?\n");
     if((s=getchar())=='\n')
       s = getchar();
