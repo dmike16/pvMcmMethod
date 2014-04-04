@@ -378,7 +378,7 @@ static char
 
 
   for(i = 0; i < status; i++)
-    update_bar[i] = '/';
+    update_bar[i] = '=';
 
   return update_bar;
 
@@ -565,7 +565,7 @@ main(int argc, char *argv[])
     for(i=0;i<grid_size;i++)
     	vf += 1-hvSide(level-u_n_plus_one[i],eps);
 
-    printf("Volume finale= %.2f\n",vf*powf(step[0],3));
+    printf("|Vf -V0| = %e\n",fabs(v0-(vf*powf(step[0],3))));
     //Generate octave script in order to plot the solution
     autogenerate_octave_script(default_name,dim_nod,first,last,level,dim_space);
     fprintf(stdout,"Script generated, into Dir \"scripts\"\n");
