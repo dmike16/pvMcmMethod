@@ -50,15 +50,7 @@
 
 static char digits[35];				
 
-static inline int
-index_full(int dim_nod,int index[])
-{
-  int index_f;
-
-  index_f = index[0]+dim_nod*index[1]+dim_nod*dim_nod*index[2];
-
-  return index_f;
-}
+#define index_full(if,dn,x)  ((if) = x[0]+(dn)*x[1]+(dn)*(dn)*x[2])
 
 static inline int
 *index_split(int id, int index[], int dim_nod)
@@ -115,14 +107,14 @@ static inline float
     //  Approximation with finite diff centered :
     //    .) go up
     ++index[i];
-    IF = index_full(dim_nod,index);
+    index_full(IF,dim_nod,index);
     --index[i];
     
     du_up = func[IF];
     
     //    .) go down
     --index[i];
-    IF = index_full(dim_nod,index);
+    index_full(IF,dim_nod,index);
     ++index[i];
     
     du_down = func[IF];
@@ -307,19 +299,19 @@ static float
     { ptr = extract_triple_index(ptr,index);
       for(i = 0; i < DIM_SPACE; i++){
 	++index[i];
-	IF = index_full(dim_nod,index);
+	index_full(IF,dim_nod,index);
 	--index[i];
 
 	u_mcm += u_new[IF];
 	    
 	--index[i];
-	IF = index_full(dim_nod,index);
+	index_full(IF,dim_nod,index);
 	++index[i];
 	
 	u_mcm += u_new[IF];
       }
       
-      IF = index_full(dim_nod,index);
+      index_full(IF,dim_nod,index);
       u_new[IF] = u_mcm/6.00f;
       u_mcm = 0.0f;
     }
@@ -337,19 +329,19 @@ mcm_below_threshold(int *index, int dim_nod,const float *u_n)
 
   for(i = 0; i < DIM_SPACE; i++){
 	++index[i];
-	IF = index_full(dim_nod,index);
+	index_full(IF,dim_nod,index);
 	--index[i];
 
 	u_mcm += u_n[IF];
 
 	--index[i];
-	IF = index_full(dim_nod,index);
+	index_full(IF,dim_nod,index);
 	++index[i];
 
 	u_mcm += u_n[IF];
   }
 
-  return u_mcm/6.00f;
+  return u_mcm;
 }
 
 
@@ -401,7 +393,7 @@ vpschema(int dim_space,int grid_size,int dim_nod,float *u_n_plus_one,
 	  { //w[i] = u_n[i];
 	    //sprintf(digits,"%d %d %d\n",index[0],index[1],index[2]);
 	    //write_byte += write(fd, digits, strlen(digits));
-		w[i] = (mcm_below_threshold(index,dim_nod,u_n)-u_n[i])*(1/(step[0]*step[0]));
+		w[i] = (mcm_below_threshold(index,dim_nod,u_n)-6.00f*u_n[i])*(1/(step[0]*step[0]));
 
 	  }
 				
