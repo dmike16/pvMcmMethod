@@ -477,7 +477,7 @@ main(int argc, char *argv[])
   
   // MCM method
   int tot_iter;	
-  float delta_t = powf(step[0],0.7f);//sqrt(step[0]);
+  float delta_t = powf(step[0],0.75f);//sqrt(step[0]);
   float *u_n_plus_one = malloc(grid_size*sizeof(float));
   float *u_n = malloc(grid_size*sizeof(float));
   char *default_name = NULL;
