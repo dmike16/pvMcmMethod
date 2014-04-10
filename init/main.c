@@ -321,7 +321,7 @@ autogenerate_octave_script(char *default_name,int dim_nod,
  vec_next->iov_len = strlen(_patch_3);
  ++vec_next;
 
- char _patch_4[] = "\"FaceColor\",\"interp\",\"EdgeColor\",\"blue\");\n";
+ char _patch_4[] = "\"FaceColor\",\"interp\",\"EdgeColor\",\"red\");\n";
  vec_next->iov_base = _patch_4;
  vec_next->iov_len = strlen(_patch_4);
  ++vec_next;
@@ -477,7 +477,7 @@ main(int argc, char *argv[])
   
   // MCM method
   int tot_iter;	
-  float delta_t = step[0];
+  float delta_t = powf(step[0],0.7f);//sqrt(step[0]);
   float *u_n_plus_one = malloc(grid_size*sizeof(float));
   float *u_n = malloc(grid_size*sizeof(float));
   char *default_name = NULL;
@@ -513,12 +513,16 @@ main(int argc, char *argv[])
   printf("V0 = %.2f\n",v0);
   //v0 = 2.00f*powf(4.00f*pi/(3.00f*v0),2.00f/3.00f);
   //PVMCM method iteration
+  float vf;
+  float eps = 1.5*step[0];
   do{
+	vf = 0.00f;
     tot_iter =  timeto/delta_t;
     memset(bar,' ',18);
     bar[18] = '\0';
     i = 0;
     time = 0.00f;
+    fprintf(stdout,"dt=%.2e",delta_t);
     for(;timeto;){
       ++i;
       if(tot_iter < i)++tot_iter;
@@ -560,8 +564,6 @@ main(int argc, char *argv[])
 
     //Eval the Norm infinity of the Error  
     //eval_method_errno(u_n_plus_one,u_vp_sphere,grid_size);
-    float vf = 0.00f;
-    float eps = 1.5*step[0];
     for(i=0;i<grid_size;i++)
     	vf += 1-hvSide(level-u_n_plus_one[i],eps);
 
