@@ -18,10 +18,6 @@ out_boundary(int dim_space, int dim_nod,int *index)
   for(i = 0;i < dim_space; i++)
     if(index[i] != 0 && index[i] != dim_nod-1)
       ++nb_in;
-    else if(index[i] == 0)
-      ++index[i];
-    else if(index[i] == dim_nod-1)
-      --index[i];
  
   if(nb_in == dim_space)
     in = true;

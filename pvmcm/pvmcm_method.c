@@ -48,10 +48,21 @@
       ++__skip_until_the_last;				\
     *__skip_until_the_last='\0';}while(0)   				
 
-static char digits[35];				
+//static char digits[35];
 
 #define index_full(if,dn,x)  ((if) = x[0]+(dn)*x[1]+(dn)*(dn)*x[2])
 
+#define index_cycle(var,dim,dim_n,x)	\
+	do{									\
+		for(var = 0; var < dim; var++){	\
+			if(x[var] == dim_n-1)		\
+				x[var] = 0;				\
+			else{					    \
+				++x[var];				\
+				break;}}				\
+		}while(0)
+
+/*
 static inline int
 *index_split(int id, int index[], int dim_nod)
 {
@@ -88,7 +99,7 @@ static inline int
   }
   return index;
 }
-
+*/
 
 static inline float
 *eval_gradient(int dim_nod, int index[], float Du[], 
@@ -267,7 +278,7 @@ pvmcm_advanction(const int index[], const float *u_n,const float *first,
 
  }
 */
-static inline char
+/*static inline char
 *extract_triple_index(char *ptr, int *index)
 { int i;
 
@@ -284,15 +295,16 @@ static inline char
       return ptr;
     }
 }
-
-static float 
-*pvmcm_below_threshold(const char *data, int *index, int dim_nod, float *u_new)
+*/
+static inline float
+*pvmcm_below_threshold(int data, size_t wb,int *index, int dim_nod, float *u_new)
 {
 
   register int i;
   int IF;
   float u_mcm = 0.0f;
-  char *ptr;
+  size_t br;
+  /*char *ptr;
   ptr=(char*)data;
   
   while(*ptr != '\0')
@@ -314,11 +326,35 @@ static float
       index_full(IF,dim_nod,index);
       u_new[IF] = u_mcm/6.00f;
       u_mcm = 0.0f;
-    }
+    }*/
+  while(wb){
+	  if((br = read(data,index,sizeof(int)*DIM_SPACE))==-1){
+		  perror("read");
+		  abort();
+	  }
+	  wb -= br;
+	  for(i = 0; i < DIM_SPACE; i++){
+	  	++index[i];
+	  	index_full(IF,dim_nod,index);
+	  	--index[i];
+
+	  	u_mcm += u_new[IF];
+
+	  	--index[i];
+	  	index_full(IF,dim_nod,index);
+	  	++index[i];
+
+	  	u_mcm += u_new[IF];
+	   }
+
+	   index_full(IF,dim_nod,index);
+	   u_new[IF] = u_mcm/6.00f;
+	   u_mcm = 0.0f;
+  }
   return u_new;
 }
  
-static float
+static inline float
 mcm_below_threshold(int *index, int dim_nod,const float *u_n)
 {
 
@@ -344,6 +380,94 @@ mcm_below_threshold(int *index, int dim_nod,const float *u_n)
   return u_mcm;
 }
 
+static inline void
+vpschema_core(int dim_space,int grid_size,int dim_nod,float *u_n_plus_one,
+	      const float *u_n, const float *step,float delta_t,
+	      gridType g_nod,const float *first,const float *last, float I_n)
+{
+
+  register int i,j;
+
+  /* Install handler for SIGDIM
+
+  struct sigaction sa,sa_def;
+
+  memset(&sa, 0, sizeof(sa));
+  sa.sa_handler = handler_sigdim;
+  sigaction(SIGDIM, &sa, &sa_def);
+
+  if(dim_space != 3)
+    raise(SIGDIM);
+
+   Reinstall the default action
+
+  sigaction(SIGDIM, &sa_def, NULL);
+*/
+
+  int index[DIM_SPACE] = {0,0,0};
+  int fd;
+  float Du[DIM_SPACE];
+  float ni[DIM_SPACE][NUM_VEC];
+
+  fd = open("index-tmp.bin",O_RDWR | O_CREAT | O_APPEND, 0666);
+  CHECK_OPEN(fd);
+  unlink("index-tmp.bin");
+
+  size_t write_byte = 0;
+
+  for(i = 0; i < grid_size; i++){
+    //index_split(i,index,dim_nod);
+    if((out_boundary(DIM_SPACE,dim_nod,index)))
+     {
+	eval_gradient(dim_nod,index,Du,u_n,step[0]);
+	if(norm_R3(Du) <= C*step[0] || p1p3(Du) <= C*step[0])
+	  { u_n_plus_one[i] = u_n[i];
+	    //sprintf(digits,"%d %d %d\n",index[0],index[1],index[2]);
+	    //write_byte += write(fd, digits, strlen(digits));
+	  	write_byte += write(fd, index, sizeof(int)*DIM_SPACE);
+		//u_n_plus_one[i] = mcm_below_threshold(index,dim_nod,u_n);
+	  }
+
+	else
+	  {
+	    eval_direction_vector(Du,ni);
+	    u_n_plus_one[i] = pvmcm_above_threshold(index,ni,u_n,delta_t,step,
+						  first,last,dim_nod,g_nod,I_n);
+	  }
+     }
+    else
+      u_n_plus_one[i] = u_n[i];
+
+    index_cycle(j,DIM_SPACE,dim_nod,index);
+
+  }
+
+
+  // If there are some points below the threshold we use an "ad hoc" method
+  if(write_byte != 0)
+    {
+
+      lseek(fd,0,SEEK_SET);
+      /*
+      char *data = malloc(write_byte+1);
+
+      if(data == NULL)
+	{ perror("malloc");
+	  abort();
+	}
+
+      if((int)(read(fd,data,write_byte))== -1)
+	{ perror("read");
+	  exit(1);
+	}
+      __CLOSE_THE_STRING(data);
+      */
+      u_n_plus_one = pvmcm_below_threshold(fd,write_byte,index,dim_nod,u_n_plus_one);
+
+      //free(data);
+    }
+  close(fd);
+}
 
 void 
 vpschema(int dim_space,int grid_size,int dim_nod,float *u_n_plus_one,
@@ -351,7 +475,7 @@ vpschema(int dim_space,int grid_size,int dim_nod,float *u_n_plus_one,
 	      gridType g_nod,const float *first,const float *last)
 {
 
-  register int i;
+  register int i,j;
 
   // Install handler for SIGDIM
 
@@ -368,7 +492,7 @@ vpschema(int dim_space,int grid_size,int dim_nod,float *u_n_plus_one,
   
   sigaction(SIGDIM, &sa_def, NULL);
   
-  int index[DIM_SPACE];
+  int index[DIM_SPACE]={0,0,0};
   //int fd;
   float Du[DIM_SPACE];
   float ni[DIM_SPACE][NUM_VEC];
@@ -385,7 +509,7 @@ vpschema(int dim_space,int grid_size,int dim_nod,float *u_n_plus_one,
    size_t write_byte = 0;
 */
   for(i = 0; i < grid_size; i++){
-    index_split(i,index,dim_nod);
+    //index_split(i,index,dim_nod);
     if((out_boundary(DIM_SPACE,dim_nod,index)))
      {
 	eval_gradient(dim_nod,index,Du,u_n,step[0]);
@@ -412,9 +536,10 @@ vpschema(int dim_space,int grid_size,int dim_nod,float *u_n_plus_one,
 
    //vol1 += 1-hvSide(level-u_n[i],eps);
    //vol2 += 1-hvSide(level-w[i],eps);
-
+   index_cycle(j,DIM_SPACE,dim_nod,index);
 
   }
+
  /*
   if(write_byte != 0)
       {
@@ -445,7 +570,7 @@ vpschema(int dim_space,int grid_size,int dim_nod,float *u_n_plus_one,
   //}
 
   I_n = -(I_n * powf(step[0],DIM_SPACE))/(3.00f*v0);
-
+  //printf("\niint_S(H dS)/3V0= %.3f\n",I_n);
   //vol1 *= powf(step[0],DIM_SPACE);
   //vol2 *= powf(step[0],DIM_SPACE);
   //printf("\nVol1 = %.2f , Vol2 = %.2f \n",vol1,vol2);
@@ -467,86 +592,3 @@ vpschema_core(dim_space,grid_size,dim_nod,u_n_plus_one,u_n,
       		    step,delta_t,g_nod,first,last,I_n);
 
 }
-
-void
-vpschema_core(int dim_space,int grid_size,int dim_nod,float *u_n_plus_one,
-	      const float *u_n, const float *step,float delta_t,
-	      gridType g_nod,const float *first,const float *last, float I_n)
-{
-
-  register int i;
-
-  // Install handler for SIGDIM
-
-  struct sigaction sa,sa_def;
-
-  memset(&sa, 0, sizeof(sa));
-  sa.sa_handler = handler_sigdim;
-  sigaction(SIGDIM, &sa, &sa_def);
-
-  if(dim_space != 3)
-    raise(SIGDIM);
-
-  // Reinstall the default action
-
-  sigaction(SIGDIM, &sa_def, NULL);
-
-  int index[DIM_SPACE];
-  int fd;
-  float Du[DIM_SPACE];
-  float ni[DIM_SPACE][NUM_VEC];
-
-  fd = open("index-tmp.txt",O_RDWR | O_CREAT | O_APPEND, 0666);
-  CHECK_OPEN(fd);
-  unlink("index-tmp.txt");
-
-  size_t write_byte = 0;
-
-  for(i = 0; i < grid_size; i++){
-    index_split(i,index,dim_nod);
-    if((out_boundary(DIM_SPACE,dim_nod,index)))
-     {
-	eval_gradient(dim_nod,index,Du,u_n,step[0]);
-	if(norm_R3(Du) <= C*step[0] || p1p3(Du) <= C*step[0])
-	  { u_n_plus_one[i] = u_n[i];
-	    sprintf(digits,"%d %d %d\n",index[0],index[1],index[2]);
-	    write_byte += write(fd, digits, strlen(digits));
-		//u_n_plus_one[i] = mcm_below_threshold(index,dim_nod,u_n);
-	  }
-
-	else
-	  {
-	    eval_direction_vector(Du,ni);
-	    u_n_plus_one[i] = pvmcm_above_threshold(index,ni,u_n,delta_t,step,
-						  first,last,dim_nod,g_nod,I_n);
-	  }
-     }
-    else
-      u_n_plus_one[i] = u_n[i];
-
-  }
-
-
-  // If there are some points below the threshold we use an "ad hoc" method
-  if(write_byte != 0)
-    {
-      lseek(fd,0,SEEK_SET);
-      char *data = malloc(write_byte+1);
-
-      if(data == NULL)
-	{ perror("malloc");
-	  abort();
-	}
-
-      if((int)(read(fd,data,write_byte))== -1)
-	{ perror("read");
-	  exit(1);
-	}
-      __CLOSE_THE_STRING(data);
-      u_n_plus_one = pvmcm_below_threshold(data,index,dim_nod,u_n_plus_one);
-
-      free(data);
-    }
-  close(fd);
-}
-
