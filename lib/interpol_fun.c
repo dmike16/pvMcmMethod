@@ -10,29 +10,31 @@
 #include "grid.h"
 #include "interpol_fun.h"
 
-static float
-*set_level_func_value(int num_P1, float *tmp_value, float *point_value)
-{
-  register int i;
+//static float
+//*set_level_func_value(int num_P1, float *tmp_value, float *point_value)
+//{
+//  register int i;
 
-  if((point_value = realloc(point_value,num_P1*sizeof(float))) == NULL)
-    {
-      fprintf(stdout,"Error in realloc\n");
-      abort();
-    }
+//  if((point_value = realloc(point_value,num_P1*sizeof(float))) == NULL)
+//    {
+//      fprintf(stdout,"Error in realloc\n");
+//      abort();
+//    }
 
-  for(i = 0; i < num_P1; i++)
-    point_value[i] = tmp_value[i];
+#define __copy_values(va,lim,tmp,x)		\
+  do{for(va = 0; va < lim; va++)		\
+      x[va] = tmp[va];				\
+  }while(0)						
 
-  return point_value;
-}
+//  return point_value;
+//}
 
 
 static float
 interpol_linear_tree(int dim_space, int num_vertex,const float *g_point, 
 		     const float **point, float *point_value)
 {
-  register int j,k,l;
+  register int j,k,l,h;
 
   int mv_,add_,dim_flag,num_P1;
   float new_value;
@@ -64,13 +66,13 @@ interpol_linear_tree(int dim_space, int num_vertex,const float *g_point,
       j += add_;
     }
     // Control the interpolation's number and their dimension 
-    point_value = set_level_func_value(num_P1,tmp_value,point_value);
+    __copy_values(h,num_P1,tmp_value,point_value);
     num_P1 = num_P1/2;
     ++dim_flag;
     if(num_P1 == 0)continue;
     add_ = num_vertex/num_P1;
     mv_ = add_/2;
-    tmp_value = realloc(tmp_value, num_P1*sizeof(float));
+    //tmp_value = realloc(tmp_value, num_P1*sizeof(float));
   }while (dim_flag <= dim_space);
 
   new_value = *point_value;
