@@ -477,7 +477,7 @@ main(int argc, char *argv[])
   
   // MCM method
   int tot_iter;	
-  float delta_t = powf(step[0],0.75f);//sqrt(step[0]);
+  float delta_t = step[0];
   float *u_n_plus_one = malloc(grid_size*sizeof(float));
   float *u_n = malloc(grid_size*sizeof(float));
   char *default_name = NULL;
@@ -522,7 +522,7 @@ main(int argc, char *argv[])
     bar[18] = '\0';
     i = 0;
     time = 0.00f;
-    fprintf(stdout,"dt=%.2e",delta_t);
+    fprintf(stdout,"dt=%.2e\n",delta_t);
     for(;timeto;){
       ++i;
       if(tot_iter < i)++tot_iter;
@@ -567,7 +567,7 @@ main(int argc, char *argv[])
     for(i=0;i<grid_size;i++)
     	vf += 1-hvSide(level-u_n_plus_one[i],eps);
 
-    printf("|Vf -V0| = %e\n",fabs(v0-(vf*powf(step[0],3))));
+    printf("|%.2f -%.2f| = %e\n",v0,vf*powf(step[0],3),fabs(v0-(vf*powf(step[0],3))));
     //Generate octave script in order to plot the solution
     autogenerate_octave_script(default_name,dim_nod,first,last,level,dim_space);
     fprintf(stdout,"Script generated, into Dir \"scripts\"\n");
