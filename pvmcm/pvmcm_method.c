@@ -328,7 +328,7 @@ static inline float
       u_mcm = 0.0f;
     }*/
   while(wb){
-	  if((br = read(data,index,sizeof(int)*DIM_SPACE))==-1){
+	  if((signed)(br = read(data,index,sizeof(int)*DIM_SPACE))==-1){
 		  perror("read");
 		  abort();
 	  }
@@ -381,7 +381,7 @@ mcm_below_threshold(int *index, int dim_nod,const float *u_n)
 }
 
 static inline void
-vpschema_core(int dim_space,int grid_size,int dim_nod,float *u_n_plus_one,
+vpschema_core(int grid_size,int dim_nod,float *u_n_plus_one,
 	      const float *u_n, const float *step,float delta_t,
 	      gridType g_nod,const float *first,const float *last, float I_n)
 {
@@ -588,7 +588,7 @@ vpschema(int dim_space,int grid_size,int dim_nod,float *u_n_plus_one,
 */
 free(w);
 
-vpschema_core(dim_space,grid_size,dim_nod,u_n_plus_one,u_n,
+vpschema_core(grid_size,dim_nod,u_n_plus_one,u_n,
       		    step,delta_t,g_nod,first,last,I_n);
 
 }

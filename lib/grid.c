@@ -17,14 +17,14 @@ struct axes_nod {
 };
 
 
-static void
-check(void *p,const char *msg)
-{
-	if(p == NULL){
-		printf("%s\n",msg);
-		exit(exit_failure);
-	}
-}
+#define check(p,msg)					\
+	do{									\
+		if(p==NULL){					\
+			fprintf(stderr,"%s\n",msg); \
+			exit(exit_failure);			\
+		}								\
+	}while(0)
+
 
 static gridType 
 init_grid(int dim_space)
@@ -89,17 +89,24 @@ interpol_points(int dim_space,float *first,float *last)
 	return g_plus;
 }
 */
-int 
-*find_position(int dim_space,const float *g,const float *first,const float *step)
-{
-	register int i;
-	int *index = malloc(dim_space*sizeof(int));
+//int
+//*find_position(int dim_space,const float *g,const float *first,const float *step)
+//{
+//	register int i;
+//	int *index = malloc(dim_space*sizeof(int));
 
-	for (i = 0; i < dim_space; i++)
-		index[i] = (int) ((g[i] - first[i])/step[i]);
+#define find_pos(va,dim,in,pt,fpt,step) 					\
+	do{														\
+		for(va = 0; va < dim; va++)							\
+			in[va]=(int) ((pt[va] - fpt[va])/step[va]);		\
+	}while(0)
 
-	return index;
-}
+
+//for (i = 0; i < dim_space; i++)
+//		index[i] = (int) ((g[i] - first[i])/step[i]);
+
+//	return index;
+//}
 
 float
 *find_point(int dim_space,const int *index, gridType g, float *point)
@@ -128,7 +135,7 @@ float
 	for (i = 0; i < num_vertex; i++){
 	  g_reg[i] = malloc(dim_space*sizeof(float));
 	  check(g_reg[i],"**Error during allocaton of memory \n");
-	  g_reg[i] = find_point(dim_space,index[i],g,g_reg[i]);
+	  find_point(dim_space,index[i],g,g_reg[i]);
 	}
 	
 	return g_reg;
@@ -138,17 +145,24 @@ int
 **find_index_region(const float *g, int dim_space, const float *first, 
 		    const float *step)
 {
-  register int i,j,mv_ = 0,mv_up = 1,mv_tmp = 0,i_tmp = 0,i_up,flag;
+  register  int i,j; //mv_ = 0,mv_up = 1,mv_tmp = 0,i_tmp = 0,i_up,flag;
   int num_vertex = (int) powf(2,dim_space);
   int **index = malloc(num_vertex*sizeof(int*));
   
-  index[0] = find_position(dim_space,g,first,step);
-  flag = 1,i_up = 0;
+  index[0] = malloc(dim_space*sizeof(int));
+  check(index[0],"**Error during allocation of memory \n");
+  find_pos(i,dim_space,index[0],g,first,step);
+  //flag = 1,i_up = 0;
   
   for (i = 1; i < num_vertex; i++){
     index[i] = malloc(dim_space*sizeof(int));
-    check(index[i],"**Error during allocaton of memory \n");
-    if(mv_tmp != 0){
+    check(index[i],"**Error during allocation of memory \n");
+    for(j=0; j < dim_space; j++)
+    	if(i & 1 << j)
+    		index[i][j]=index[0][j]+1;
+    	else
+    		index[i][j]=index[0][j];
+    /*if(mv_tmp != 0){
       i_tmp = i_up;
       if (flag == 4){
 	mv_up ++;
@@ -174,7 +188,7 @@ int
     if (mv_tmp == 0)
       mv_tmp++;
     else
-      mv_tmp--;
+      mv_tmp--;*/
   }
   
   return index;

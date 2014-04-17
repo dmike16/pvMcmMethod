@@ -54,7 +54,7 @@ float
   }
   
   for(i = 0; i < grid_size; i++){
-    point = find_point(dim_space,index,g_nod,point);
+    find_point(dim_space,index,g_nod,point);
     nod_values[i] = f(dim_space,point,radius);
     for(j = 0; j < dim_space; j++)
       if(index[j] == dim_nod-1)

@@ -5,6 +5,7 @@
 
 typedef struct axes_nod **gridType;
 
+
 extern gridType create_grid( int dim_nod, int dim_space, 
 		      const float *first,const float *step);
 
