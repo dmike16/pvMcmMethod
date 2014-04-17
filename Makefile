@@ -70,15 +70,20 @@ MAKEFLAGS += --include-dir=$(srctree)
 $(srctree)/scripts/Kbuild.include: ;
 include $(srctree)/scripts/Kbuild.include
 
-CC		= gcc
+CC			= gcc
 CFLAGS		= $(USCFLAGS) -O3 -W -Wall -pedantic -ansi -std=gnu99
-AR		= ar
-LD		= ld
+AR			= ar
+LD			= ld
 MKDIR		= mkdir
 
 LINUXINCLUDE	:= -Iinclude $(if $(KBUILD_SRC), -I$(srctree)/include)
 SYSTEM-LIBRARIES:= -lm
 
+# Enable Profiling Data
+#-----------------------------------------------------------------------------
+ifeq ($(strip $(OPTIONS)),-pg)
+CFLAGS-LINK = -pg
+endif
 
 export CONFIG_SHELL CC AR CFLAGS MAKE LINUXINCLUDE LD OPTIONS
 export KBUILD_ARFLAGS := D
@@ -109,7 +114,7 @@ pvschema-all  := $(pvschema-init) $(pvschema-main)
 export KBUILD_PVSCHEMA_OBJS := $(pvschema-all)
 
 pvschema.out: $(pvschema-init) $(pvschema-main)
-	$(CC) -o arch/$@ $^ $(SYSTEM-LIBRARIES)
+	$(CC) $(CFLAGS-LINK) -o arch/$@ $^ $(SYSTEM-LIBRARIES)
 
 
 $(sort $(pvschema-init) $(pvschema-main)): $(pvschema-dirs) ;

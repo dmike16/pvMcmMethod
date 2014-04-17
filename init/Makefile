@@ -6,3 +6,9 @@ clean-files := *~ *.o *.d
 ifeq ($(strip $(OPTIONS)),-d)
 cflags-y += -DMTRACE
 endif
+
+# Enable Profiling Data
+#-----------------------------------------------------------------------------
+ifeq ($(strip $(OPTIONS)),-pg)
+cflags-y += -pg
+endif
