@@ -29,7 +29,7 @@
 #include "heaviSide.h"
 
 #define TOL 10E-07
-#define _NLS 37
+#define _NLS 40
 #define _check_time(a,b) if((a) > (b))(a)=(b)
 #define pi 3.141592654f
 
@@ -50,9 +50,7 @@ do{                                                                    \
 static int
 make_output_file(const float *buffer, char *name,int dimension)
 {
-  int i;
   int fd;
-  int char_numb = 0;
 
   fd = open (name,O_WRONLY | O_CREAT | O_TRUNC,0666);
 
@@ -60,15 +58,15 @@ make_output_file(const float *buffer, char *name,int dimension)
     fprintf(stderr,"Erro in open file: %s\n",strerror(errno));
     return 1;
   }
-
+/*
   FILE *arg = fdopen(fd,"w");
   
    for(i = 0; i < dimension; ++i)
      char_numb = fprintf(arg,"%.6f\n",buffer[i]);
 
   fclose(arg);
-  
-  return char_numb;
+*/
+  return ((write(fd,buffer,sizeof(float)*dimension)==-1) ? -1 : 0);
 
 }
 
@@ -172,6 +170,14 @@ autogenerate_octave_script(char *default_name,int dim_nod,
  vec_next->iov_len = strlen(_open_3);
  ++vec_next;
  
+ vec_next->iov_base = "dataf2=fread(f2,inf,\"float\");\n";
+ vec_next->iov_len  =  30;
+ ++vec_next;
+
+ vec_next->iov_base = "dataf3=fread(f3,inf,\"float\");\n";
+ vec_next->iov_len  =  30;
+ ++vec_next;
+
  vec_next->iov_base = cycle_for;
  vec_next->iov_len = strlen(cycle_for);
  ++vec_next;
@@ -198,12 +204,23 @@ autogenerate_octave_script(char *default_name,int dim_nod,
  vec_next->iov_len = strlen(cycle_for_k);
  ++vec_next;
  
- vec_next->iov_base = "      v(j,k,i)=fscanf(f2,\"%f\",1);\n";
- vec_next->iov_len = 34;
+ char *id=malloc(30 + 2*strlen(range));
+ _allocate_error(id);
+ strcpy(id,"      id=k+(j-1)*");
+ strcat(id,range);
+ strcat(id,"+(i-1)*");
+ strcat(id,range);
+ strcat(id,"**2;\n");
+ vec_next->iov_base = id;
+ vec_next->iov_len = 29 + 2*strlen(range);
+ ++vec_next;
+
+ vec_next->iov_base = "      v(j,k,i)=dataf2(id);\n";
+ vec_next->iov_len = 27;
  ++vec_next;
  
- vec_next->iov_base = "      u(j,k,i)=fscanf(f3,\"%f\",1);\n";
- vec_next->iov_len = 34;
+ vec_next->iov_base = "      u(j,k,i)=dataf3(id);\n";
+ vec_next->iov_len = 27;
  ++vec_next;
  
  vec_next->iov_base = "    end\n";
@@ -348,6 +365,7 @@ autogenerate_octave_script(char *default_name,int dim_nod,
    free(level_set);
    free(isosurface_1);
    free(isosurface_2);
+   free(id);
    close(fd);
    fprintf(stdout,"ERROR in CREAT OCTAVE SCRIPT\n");
    exit(1);}
@@ -367,6 +385,7 @@ autogenerate_octave_script(char *default_name,int dim_nod,
  free(isosurface_1);
  free(isosurface_2);
  free(axis);
+ free(id);
   
 }
 
