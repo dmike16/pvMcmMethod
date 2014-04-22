@@ -50,7 +50,7 @@ do{                                                                    \
 static int
 make_output_file(const float *buffer, char *name,int dimension)
 {
-  int fd;
+  int fd,flag;
 
   fd = open (name,O_WRONLY | O_CREAT | O_TRUNC,0666);
 
@@ -58,15 +58,39 @@ make_output_file(const float *buffer, char *name,int dimension)
     fprintf(stderr,"Erro in open file: %s\n",strerror(errno));
     return 1;
   }
-/*
-  FILE *arg = fdopen(fd,"w");
-  
-   for(i = 0; i < dimension; ++i)
-     char_numb = fprintf(arg,"%.6f\n",buffer[i]);
 
-  fclose(arg);
-*/
-  return ((write(fd,buffer,sizeof(float)*dimension)==-1) ? -1 : 0);
+  if((write(fd,buffer,sizeof(float)*dimension))==-1)
+	  flag = -1;
+  else
+	  flag = 0;
+
+  close(fd);
+
+  return flag;
+
+}
+
+static float
+*extractIC(const char *file, int grid_size){
+
+	float *u0 = malloc(grid_size*sizeof(float));
+
+	_allocate_error(u0);
+
+	int  fd;
+	if((fd=open(file,O_RDONLY,0666)) == -1){
+		fprintf(stderr,"Error in open file: %s\n",strerror(errno));
+		exit(EXIT_FAILURE);
+	}
+
+	if((read(fd,u0,sizeof(float)*grid_size)) == -1){
+		close(fd);
+		return NULL;
+	}
+	else {
+		close(fd);
+		return u0;
+	}
 
 }
 
@@ -453,8 +477,8 @@ main(int argc, char *argv[])
   dim_nod = atoi(tmp);
   tmp = strtok(NULL,"\n");
   radius[0] = atof(tmp);
-  tmp = strtok(NULL,"\n");
-  radius[1] = atof(tmp);
+  //tmp = strtok(NULL,"\n");
+  //radius[1] = atof(tmp);
   tmp = strtok(NULL,"\n");
   level = atof(tmp);
   first = (float*) malloc(dim_space*sizeof(float));
@@ -491,10 +515,18 @@ main(int argc, char *argv[])
   g_nod = create_grid(dim_nod,dim_space,first,step);
   fprintf(stdout,"Grid Size: %d\n",grid_size);
 
+  if(argc==3){
+	  fprintf(stdout,"Initial Condition read from file: %s\n",argv[2]);
+	  if(!(nod_values = extractIC(argv[2],grid_size))){
+			  fprintf(stdout,"Error in Readin file %s",argv[2]);
+			  exit(EXIT_FAILURE);
+	  }
+  }
+  else
   // Eval initial func on grid points	
-  //nod_values = eval_ic_on_grid(grid_size,dim_space,dim_nod,g_nod,u_0,radius);
-  //nod_values = eval_ic_on_grid(grid_size,dim_space,dim_nod,g_nod,u0_torus,radius);
-  nod_values = eval_ic_on_grid(grid_size,dim_space,dim_nod,g_nod,u0_dumbell,radius);
+	  nod_values = eval_ic_on_grid(grid_size,dim_space,dim_nod,g_nod,u_0,radius);
+  	  //nod_values = eval_ic_on_grid(grid_size,dim_space,dim_nod,g_nod,u0_torus,radius);
+  	  //nod_values = eval_ic_on_grid(grid_size,dim_space,dim_nod,g_nod,u0_dumbell,radius);
 
   // MCM method
   int tot_iter;	
@@ -525,8 +557,8 @@ main(int argc, char *argv[])
 
   // Eval the volume preserving constant for the sphere
   //float r0= extract_radius_sphere(radius,4,level);
-  //float r0 = sqrt((*radius)*(*radius) -level);
-  //fprintf(stdout,"r0=%f\n",r0);
+  float r0 = sqrt((*radius)*(*radius) -level);
+  fprintf(stdout,"r0=%f\n",r0);
   //v0=(4.00f/3.00f)*pi*powf(r0,3);
   //float vol_preserv = 2.00f*powf(4.00f*pi/(3.00f*v0),2.00f/3.00f);
   //float r0 = radius[0]*radius[0] +level;
@@ -563,21 +595,18 @@ main(int argc, char *argv[])
       time += delta_t;
       _check_time(time,timeto);
       if (time == timeto){
-	if(argc == 2)
-	  default_name = "arch/dflMCMsolution.dat";
-	else
-	  default_name = argv[2];
-	if((make_output_file(u_n_plus_one,default_name,grid_size)) != -1)
-	  {
-	    fprintf(stdout,"\nTime %.2f reached in %d iter\n",timeto,i);
-	    fprintf(stdout,"FILE CREATED \n");
-	  }
-	else
-	  perror("make_output_file");
-	break;
-      }
-      u_n = vector_copy(u_n_plus_one,u_n,grid_size);
-    }
+    	  default_name = "arch/dflMCMsolution.dat";
+    	  if((make_output_file(u_n_plus_one,default_name,grid_size)) != -1)
+    	  {
+    		  fprintf(stdout,"\nTime %.2f reached in %d iter\n",timeto,i);
+    		  fprintf(stdout,"FILE CREATED \n");
+    	  }
+    	  else
+    		  perror("make_output_file");
+    	  break;
+      	  }
+      	  u_n = vector_copy(u_n_plus_one,u_n,grid_size);
+    	}
 
 
     // Case Output time = 0.0
