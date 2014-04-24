@@ -13,6 +13,7 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <sys/uio.h>
+#include <sys/wait.h>
 #include <unistd.h>
 #include <errno.h>
 #include <time.h>
@@ -47,6 +48,26 @@ do{                                                                    \
     exit(1);}                                                          \
  }while(0)
   
+static int draw_flag = 0;
+
+static int
+spawn(char *prog,char **arg_list){
+	pid_t child_pid;
+
+// Duplicate the process
+	child_pid = fork();
+
+	if(child_pid != 0)
+		return child_pid;
+	else{
+		execvp (prog,arg_list);
+		fprintf(stderr,"An error occur in execvp\n");
+		abort();
+	}
+
+	return 0;
+}
+
 static int
 make_output_file(const float *buffer, char *name,int dimension)
 {
@@ -183,24 +204,30 @@ autogenerate_octave_script(char *default_name,int dim_nod,
  vec_next->iov_len = strlen(_open_2);
  ++vec_next;
 
- char *_open_3 = malloc((strlen(cwd)+26+1)*sizeof(char));
- _allocate_error(_open_1);
- strcpy(_open_3,"f3=fopen(\"");
- strcat(_open_3,cwd);
- strcat(_open_3,"/arch/IC.dat");
- strcat(_open_3,"\");\n");
+ char *_open_3 = NULL;
+
+ if(!draw_flag) {
+	 _open_3 = malloc((strlen(cwd)+26+1)*sizeof(char));
+	 _allocate_error(_open_1);
+	 strcpy(_open_3,"f3=fopen(\"");
+	 strcat(_open_3,cwd);
+	 strcat(_open_3,"/arch/IC.dat");
+	 strcat(_open_3,"\");\n");
  
- vec_next->iov_base = _open_3;
- vec_next->iov_len = strlen(_open_3);
- ++vec_next;
+	 vec_next->iov_base = _open_3;
+	 vec_next->iov_len = strlen(_open_3);
+	 ++vec_next;
+
+	 vec_next->iov_base = "dataf3=fread(f3,inf,\"float\");\n";
+	 vec_next->iov_len  =  30;
+	 ++vec_next;
+ }
  
  vec_next->iov_base = "dataf2=fread(f2,inf,\"float\");\n";
  vec_next->iov_len  =  30;
  ++vec_next;
 
- vec_next->iov_base = "dataf3=fread(f3,inf,\"float\");\n";
- vec_next->iov_len  =  30;
- ++vec_next;
+
 
  vec_next->iov_base = cycle_for;
  vec_next->iov_len = strlen(cycle_for);
@@ -243,9 +270,11 @@ autogenerate_octave_script(char *default_name,int dim_nod,
  vec_next->iov_len = 27;
  ++vec_next;
  
- vec_next->iov_base = "      u(j,k,i)=dataf3(id);\n";
- vec_next->iov_len = 27;
- ++vec_next;
+ if(!draw_flag){
+	 vec_next->iov_base = "      u(j,k,i)=dataf3(id);\n";
+	 vec_next->iov_len = 27;
+	 ++vec_next;
+ }
  
  vec_next->iov_base = "    end\n";
  vec_next->iov_len = 8;
@@ -263,9 +292,11 @@ autogenerate_octave_script(char *default_name,int dim_nod,
  vec_next->iov_len = 12;
  ++vec_next;
 
- vec_next->iov_base = "fclose(f3);\n";
- vec_next->iov_len = 12;
- ++vec_next;
+ if(!draw_flag){
+	 vec_next->iov_base = "fclose(f3);\n";
+	 vec_next->iov_len = 12;
+	 ++vec_next;
+ }
  
  vec_next->iov_base = "view(-38,20);\n";
  vec_next->iov_len = 14;
@@ -275,23 +306,25 @@ autogenerate_octave_script(char *default_name,int dim_nod,
  vec_next->iov_len = 25;
  ++vec_next;
  
- char *level_set,*isosurface_1;
+ char *level_set, *isosurface_1=NULL;
 
  _digits((int)level,nd,tmp);
  level_set = malloc(nd+4+1);
  _allocate_error(level_set);
  sprintf(level_set,"%.3f",level);
 
- isosurface_1 = malloc(40+strlen(level_set)+1);
- _allocate_error(isosurface_1);
- strcpy(isosurface_1,"[faces,verts,c]=isosurface(X,Y,Z,u,");
- strcat(isosurface_1,level_set);
- strcat(isosurface_1,",Y);\n");
+ if(!draw_flag){
 
- vec_next->iov_base = isosurface_1;
- vec_next->iov_len = strlen(isosurface_1);
- ++vec_next;
- 
+	 isosurface_1 = malloc(40+strlen(level_set)+1);
+	 _allocate_error(isosurface_1);
+	 strcpy(isosurface_1,"[faces,verts,c]=isosurface(X,Y,Z,u,");
+	 strcat(isosurface_1,level_set);
+	 strcat(isosurface_1,",Y);\n");
+
+	 vec_next->iov_base = isosurface_1;
+	 vec_next->iov_len = strlen(isosurface_1);
+	 ++vec_next;
+ }
  
  char *first_axis,*last_axis,*axis;
  
@@ -316,31 +349,34 @@ autogenerate_octave_script(char *default_name,int dim_nod,
      strcat(axis,",");
  }
  strcat(axis,"]);\n");
- vec_next->iov_base = axis;
- vec_next->iov_len = strlen(axis);
- ++vec_next;
 
- char _patch[] = "p = patch(\"Faces\",faces,\"Vertices\",verts,\"FaceVertexCData\",c,...\n";
- vec_next->iov_base = _patch;
- vec_next->iov_len = strlen(_patch);
- ++vec_next;
+ if(!draw_flag){
+	 vec_next->iov_base = axis;
+	 vec_next->iov_len = strlen(axis);
+	 ++vec_next;
+
+	 char _patch[] = "p = patch(\"Faces\",faces,\"Vertices\",verts,\"FaceVertexCData\",c,...\n";
+	 vec_next->iov_base = _patch;
+	 vec_next->iov_len = strlen(_patch);
+	 ++vec_next;
   
- char _patch_2[] = "\"FaceColor\",\"interp\",\"EdgeColor\",\"blue\");\n";
- vec_next->iov_base = _patch_2;
- vec_next->iov_len = strlen(_patch_2);
- ++vec_next;
+	 char _patch_2[] = "\"FaceColor\",\"interp\",\"EdgeColor\",\"blue\");\n";
+	 vec_next->iov_base = _patch_2;
+	 vec_next->iov_len = strlen(_patch_2);
+	 ++vec_next;
  
- vec_next->iov_base = "set(p,\"FaceLighting\",\"phong\");\n";
- vec_next->iov_len = 31;
- ++vec_next;
+	 vec_next->iov_base = "set(p,\"FaceLighting\",\"phong\");\n";
+	 vec_next->iov_len = 31;
+	 ++vec_next;
  
- vec_next->iov_base = "figure()\n";
- vec_next->iov_len = 9;
- ++vec_next;
+	 vec_next->iov_base = "figure()\n";
+	 vec_next->iov_len = 9;
+	 ++vec_next;
 
- vec_next->iov_base = "view(-38,20);\n";
- vec_next->iov_len = 14;
- ++vec_next;
+	 vec_next->iov_base = "view(-38,20);\n";
+	 vec_next->iov_len = 14;
+	 ++vec_next;
+ }
 
  vec_next->iov_base = axis;
  vec_next->iov_len = strlen(axis);
@@ -379,7 +415,11 @@ autogenerate_octave_script(char *default_name,int dim_nod,
  fd = open("scripts/plotSurface.m", O_WRONLY | O_CREAT | O_TRUNC, 0666);
  size_t byte_wrote;
 
- byte_wrote = writev(fd,vec,_NLS);
+ if(!draw_flag)
+	 byte_wrote = writev(fd,vec,_NLS);
+ else
+	 byte_wrote = writev(fd,vec,_NLS-11);
+
  if((int)byte_wrote == -1){
    free(_open_2);
    free(cycle_for);
@@ -529,6 +569,12 @@ main(int argc, char *argv[])
   	  //nod_values = eval_ic_on_grid(grid_size,dim_space,dim_nod,g_nod,u0_dumbell,radius);
 
   // MCM method
+  int child_status;
+  char *arg_list[]={
+		  "octave",
+		  "scripts/plotSurface.m",
+		  NULL
+  };
   int tot_iter;	
   float delta_t = step[0];
   float *u_n_plus_one = malloc(grid_size*sizeof(float));
@@ -623,16 +669,39 @@ main(int argc, char *argv[])
 
     printf("|%.2f -%.2f| = %e\n",v0,vf*powf(step[0],3),fabs(v0-(vf*powf(step[0],3))));
     //Generate octave script in order to plot the solution
-    autogenerate_octave_script(default_name,dim_nod,first,last,level,dim_space);
+    if(!draw_flag || draw_flag == 1)
+    	autogenerate_octave_script(default_name,dim_nod,first,last,level,dim_space);
     fprintf(stdout,"Script generated, into Dir \"scripts\"\n");
     fprintf(stdout,"Time used by CPU : %g sec.\n",(clock()-start_clock)/
 	    (double) CLOCKS_PER_SEC);
     fprintf(stdout,"Do you want to plot the Solution(y/n)?\n");
     if((s=getchar())=='\n')
           s = getchar();
-    if(s == 'y')
+    if(s == 'y'){
+    	/*
     	if((system("octave scripts/plotSurface.m")))
     		fprintf(stderr,"Erro in call Octave script\n");
+    	else
+    		++draw_flag;
+    		*/
+    	// Duplicate a process and execute the octave program
+    	spawn("octave",arg_list);
+
+    	// Wait untill the child process end
+    	wait (&child_status);
+
+    	// Check exit status of child process
+    	if(WIFEXITED(child_status)){
+    		if(WEXITSTATUS(child_status))
+    			fprintf(stderr,"Error in call octave script\n");
+    		else
+    			++draw_flag;
+    	}
+    	else
+    		fprintf(stderr,"Error in Call execvp function\n");
+
+
+    }
     fprintf(stdout,"Do you want to helve delta T(y/n)?\n");
     if((s=getchar())=='\n')
       s = getchar();
