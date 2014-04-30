@@ -17,6 +17,7 @@
 #include <unistd.h>
 #include <errno.h>
 #include <time.h>
+#include <getopt.h>
 #include "grid.h"
 #include "u0.h"
 #include "u0_Torus.h"
@@ -49,6 +50,31 @@ do{                                                                    \
  }while(0)
   
 static int draw_flag = 0;
+static char *prog_name;
+
+/* #
+ * # Function to print the usafe of program
+ * #
+ * #
+ */
+
+static void
+print_usage(FILE *stream,int exit_code){
+	fprintf(stream,"Usage: %s options input-file.dat\n",prog_name);
+	fprintf(stream,
+			" -h  --help          			Display usage information\n"
+			" -s  --sphere        			set IC -> Sphere\n"
+			" -t  --torus         			set IC -> Torus\n"
+			" -d  --dumbbell      		  	set IC -> Dumbbell\n"
+			" -n  --smooth-noise filename 	Smooth an image with noise\n");
+	exit(exit_code);
+}
+
+/* #
+ * # Function to crate a child process with Fork
+ * #
+ * #
+ */
 
 static int
 spawn(char *prog,char **arg_list){
@@ -67,6 +93,12 @@ spawn(char *prog,char **arg_list){
 
 	return 0;
 }
+
+/* #
+ * # Function to crate an Output file of solution Values
+ * #
+ * #
+ */
 
 static int
 make_output_file(const float *buffer, char *name,int dimension)
@@ -91,6 +123,12 @@ make_output_file(const float *buffer, char *name,int dimension)
 
 }
 
+/* #
+ * # Function to extract the Initial Condition in case
+ * # it's provided by a binary files
+ * #
+ */
+
 static float
 *extractIC(const char *file, int grid_size){
 
@@ -99,7 +137,7 @@ static float
 	_allocate_error(u0);
 
 	int  fd;
-	if((fd=open(file,O_RDONLY,0666)) == -1){
+	if((fd=open(file,O_RDONLY)) == -1){
 		fprintf(stderr,"Error in open file: %s\n",strerror(errno));
 		exit(EXIT_FAILURE);
 	}
@@ -115,6 +153,11 @@ static float
 
 }
 
+/* #
+ * # Function to generate an Octave scritp in order to
+ * # plot the solution
+ * #
+ */
 static void
 autogenerate_octave_script(char *default_name,char *ic_name,int dim_nod,
 			   float *first, float *last, float level,int dim_space)
@@ -457,6 +500,12 @@ autogenerate_octave_script(char *default_name,char *ic_name,int dim_nod,
   
 }
 
+/* #
+ * # Function to create a progressing bar
+ * #
+ * #
+ */
+
 static char
 *update_bar(char *bar, int N,int iter,int tot_iter)
 {
@@ -474,6 +523,15 @@ static char
 
 
 float timeto,level,v0;
+static char *ic_name = "arch/IC.dat";
+static int flag_noise = 0;
+
+/* #                   #######
+ * #                   #######
+ * #        Main       #######
+ * #                   #######
+ * #                   #######
+ */
 
 int 
 main(int argc, char *argv[])
@@ -483,22 +541,74 @@ main(int argc, char *argv[])
   mtrace();
 #endif /* MTRACE */
 
+  //
+  // Check the command line options
+
+  prog_name = argv[0];
+  int next_opt;
+  const char* const short_options = "hn:std";
+  const struct option long_options[] = {
+		  {"help",	       0, NULL, 'h'},
+		  {"sphere",       0, NULL, 's'},
+		  {"torus" ,       0, NULL, 't'},
+		  {"dumbbell",     0, NULL, 'd'},
+		  {"smooth noise", 1, NULL, 'n'},
+		  {NULL, 		   0, NULL, 0}
+  };
+
+  do{
+	  next_opt = getopt_long(argc,argv,short_options,long_options,NULL);
+
+	  switch (next_opt){
+
+	  case 'h':
+		  print_usage(stdout,0);
+		  break;
+
+	  case 's':
+		  fprintf(stdout,"************************\n"
+				  "*\t SPHERE\t       *\n"
+				  "************************\n");
+		  break;
+	  case 't':
+		  fprintf(stdout,"************************\n"
+		  				  "*\t TORUS         *\n"
+		  				  "************************\n");
+		  break;
+	  case 'd':
+		  fprintf(stdout,"**************************\n"
+		  				  "*\tDumbbell\t *\n"
+		  				  "**************************\n");
+		  break;
+
+	  case 'n':
+		  flag_noise = 1;
+		  ic_name = optarg;
+		  break;
+
+	  case -1:
+		  break;
+
+	  default:
+		  print_usage(stdout,1);
+
+	  }
+  }while(next_opt != -1);
+
+
+  //Command line options Set
+  //End
+  //
+
   clock_t start_clock = clock();
   
   gridType g_nod;
   register int i;
-  char *ic_name = "arch/IC.dat";
   int dim_nod;
   int dim_space;
   float *first,*last,*step;
   float *nod_values;
   float time,radius[2];
-
-  // Check the correct usage of the programm	
-  if (argc != 2 && argc != 3){
-    fprintf(stderr,"usage: pvschema filename.dat output_filename.dat\n");
-	  exit(EXIT_FAILURE);
-  }
   
   // Read from the file
   int fd;
@@ -506,13 +616,19 @@ main(int argc, char *argv[])
   char *data,*tmp;
   size_t length;
   
-  fd = open (argv[1], O_RDONLY);
+  if((fd = open (argv[optind], O_RDONLY)) == -1){
+	  fprintf(stderr,"Error in open file: %s\n",strerror(errno));
+	  exit(EXIT_FAILURE);
+  }
   fstat (fd,&file_info);
   length = file_info.st_size;
   
   data =  (char*) malloc (length);
-  if((read (fd,data,length))== -1)
-    fprintf(stderr,"Error in reading the file %s\n",argv[1]);
+  if((read (fd,data,length))== -1){
+    fprintf(stderr,"Error in reading the file %s\n",argv[optind]);
+    close(fd);
+    exit(1);
+  }
   close(fd);
   tmp = strtok(data,"\n");
   timeto = atof(tmp);
@@ -560,8 +676,7 @@ main(int argc, char *argv[])
   g_nod = create_grid(dim_nod,dim_space,first,step);
   fprintf(stdout,"Grid Size: %d\n",grid_size);
 
-  if(argc==3){
-	  ic_name = "arch/ICnoise.dat";
+  if(flag_noise){
 	  fprintf(stdout,"Initial Condition read from file: %s\n",argv[2]);
 	  if(!(nod_values = extractIC(argv[2],grid_size))){
 			  fprintf(stdout,"Error in Read file %s",argv[2]);
@@ -597,17 +712,15 @@ main(int argc, char *argv[])
   // Create file with axis nod and IC values
   output_axes_nod(g_nod,dim_space,"arch/axesNodes.dat");
   fprintf(stdout," FILE CREATED \n");
-  if(argc != 3){
+  if(!flag_noise){
 	  make_output_file(u_n,"arch/IC.dat",grid_size);
 	  fprintf(stdout," FILE CREATED \n");
   }
-  //Eval the solution pvmcm sphere and the exact collapse time
-  //float *u_vp_sphere = malloc(grid_size*sizeof(float));
 
   fprintf(stdout,"Time to eval : %f\n",timeto);
-  //fprintf(stdout,"The Sphere will collapse at the time: %.2f\n",
-  //	  radius*radius/(2.00f*(dim_space-1)));
 
+
+ /*
   // Eval the volume preserving constant for the sphere
   //float r0= extract_radius_sphere(radius,4,level);
   //float r0 = sqrt((*radius)*(*radius) -level);
@@ -617,7 +730,11 @@ main(int argc, char *argv[])
   //float r0 = radius[0]*radius[0] +level;
   //v0 = (2.00f)*pi*pi*r0*radius[1];
   //v0 = 2.00f*powf(4.00f*pi/(3.00f*v0),2.00f/3.00f);
+ */
+
+
   //PVMCM method iteration
+  //
   float vf;
   float eps = 1.5*step[0];
   v0 = 0.00f;
