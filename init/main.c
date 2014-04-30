@@ -116,7 +116,7 @@ static float
 }
 
 static void
-autogenerate_octave_script(char *default_name,int dim_nod,
+autogenerate_octave_script(char *default_name,char *ic_name,int dim_nod,
 			   float *first, float *last, float level,int dim_space)
 {
   register int i;
@@ -207,11 +207,12 @@ autogenerate_octave_script(char *default_name,int dim_nod,
  char *_open_3 = NULL;
 
  if(!draw_flag) {
-	 _open_3 = malloc((strlen(cwd)+26+1)*sizeof(char));
+	 _open_3 = malloc((strlen(cwd)+strlen(ic_name)+15+1)*sizeof(char));
 	 _allocate_error(_open_1);
 	 strcpy(_open_3,"f3=fopen(\"");
 	 strcat(_open_3,cwd);
-	 strcat(_open_3,"/arch/IC.dat");
+	 strcat(_open_3,"/");
+	 strcat(_open_3,ic_name);
 	 strcat(_open_3,"\");\n");
  
 	 vec_next->iov_base = _open_3;
@@ -350,17 +351,20 @@ autogenerate_octave_script(char *default_name,int dim_nod,
  }
  strcat(axis,"]);\n");
 
+
+ char _patch[] = "p = patch(\"Faces\",faces,\"Vertices\",verts,\"FaceVertexCData\",c,...\n";
+ char _patch_2[] = "\"FaceColor\",\"interp\",\"EdgeColor\",\"blue\");\n";
+
  if(!draw_flag){
 	 vec_next->iov_base = axis;
 	 vec_next->iov_len = strlen(axis);
 	 ++vec_next;
 
-	 char _patch[] = "p = patch(\"Faces\",faces,\"Vertices\",verts,\"FaceVertexCData\",c,...\n";
 	 vec_next->iov_base = _patch;
 	 vec_next->iov_len = strlen(_patch);
 	 ++vec_next;
   
-	 char _patch_2[] = "\"FaceColor\",\"interp\",\"EdgeColor\",\"blue\");\n";
+
 	 vec_next->iov_base = _patch_2;
 	 vec_next->iov_len = strlen(_patch_2);
 	 ++vec_next;
@@ -399,7 +403,7 @@ autogenerate_octave_script(char *default_name,int dim_nod,
  vec_next->iov_len = strlen(_patch_3);
  ++vec_next;
 
- char _patch_4[] = "\"FaceColor\",\"interp\",\"EdgeColor\",\"red\");\n";
+ char _patch_4[] = "\"FaceColor\",\"interp\",\"EdgeColor\",\"blue\");\n";
  vec_next->iov_base = _patch_4;
  vec_next->iov_len = strlen(_patch_4);
  ++vec_next;
@@ -483,6 +487,7 @@ main(int argc, char *argv[])
   
   gridType g_nod;
   register int i;
+  char *ic_name = "arch/IC.dat";
   int dim_nod;
   int dim_space;
   float *first,*last,*step;
@@ -556,9 +561,10 @@ main(int argc, char *argv[])
   fprintf(stdout,"Grid Size: %d\n",grid_size);
 
   if(argc==3){
+	  ic_name = "arch/ICnoise.dat";
 	  fprintf(stdout,"Initial Condition read from file: %s\n",argv[2]);
 	  if(!(nod_values = extractIC(argv[2],grid_size))){
-			  fprintf(stdout,"Error in Readin file %s",argv[2]);
+			  fprintf(stdout,"Error in Read file %s",argv[2]);
 			  exit(EXIT_FAILURE);
 	  }
   }
@@ -591,9 +597,10 @@ main(int argc, char *argv[])
   // Create file with axis nod and IC values
   output_axes_nod(g_nod,dim_space,"arch/axesNodes.dat");
   fprintf(stdout," FILE CREATED \n");
-  make_output_file(u_n,"arch/IC.dat",grid_size);
-  fprintf(stdout," FILE CREATED \n");
-
+  if(argc != 3){
+	  make_output_file(u_n,"arch/IC.dat",grid_size);
+	  fprintf(stdout," FILE CREATED \n");
+  }
   //Eval the solution pvmcm sphere and the exact collapse time
   //float *u_vp_sphere = malloc(grid_size*sizeof(float));
 
@@ -603,8 +610,8 @@ main(int argc, char *argv[])
 
   // Eval the volume preserving constant for the sphere
   //float r0= extract_radius_sphere(radius,4,level);
-  float r0 = sqrt((*radius)*(*radius) -level);
-  fprintf(stdout,"r0=%f\n",r0);
+  //float r0 = sqrt((*radius)*(*radius) -level);
+  //fprintf(stdout,"r0=%f\n",r0);
   //v0=(4.00f/3.00f)*pi*powf(r0,3);
   //float vol_preserv = 2.00f*powf(4.00f*pi/(3.00f*v0),2.00f/3.00f);
   //float r0 = radius[0]*radius[0] +level;
@@ -670,7 +677,7 @@ main(int argc, char *argv[])
     printf("|%.2f -%.2f| = %e\n",v0,vf*powf(step[0],3),fabs(v0-(vf*powf(step[0],3))));
     //Generate octave script in order to plot the solution
     if(!draw_flag || draw_flag == 1)
-    	autogenerate_octave_script(default_name,dim_nod,first,last,level,dim_space);
+    	autogenerate_octave_script(default_name,ic_name,dim_nod,first,last,level,dim_space);
     fprintf(stdout,"Script generated, into Dir \"scripts\"\n");
     fprintf(stdout,"Time used by CPU : %g sec.\n",(clock()-start_clock)/
 	    (double) CLOCKS_PER_SEC);
