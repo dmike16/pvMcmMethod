@@ -29,6 +29,7 @@
 #include "pvschema_core.h"
 #include "vector_copy.h"
 #include "heaviSide.h"
+#include "noiseRand.h"
 
 #define TOL 10E-07
 #define _NLS 40
@@ -53,7 +54,7 @@ static int draw_flag = 0;
 static char *prog_name;
 
 /* #
- * # Function to print the usafe of program
+ * # Function to print the usage of program
  * #
  * #
  */
@@ -66,7 +67,8 @@ print_usage(FILE *stream,int exit_code){
 			" -s  --sphere        			set IC -> Sphere\n"
 			" -t  --torus         			set IC -> Torus\n"
 			" -d  --dumbbell      		  	set IC -> Dumbbell\n"
-			" -n  --smooth-noise filename 	Smooth an image with noise\n");
+			" -n  --smooth-noise filename   Smooth an image with noise\n"
+			"     --rand-noise                  Noise generated random\n");
 	exit(exit_code);
 }
 
@@ -545,20 +547,20 @@ main(int argc, char *argv[])
   // Check the command line options
 
   prog_name = argv[0];
-  int next_opt;
+  int next_opt,optextra = 1;
   const char* const short_options = "hn:std";
   const struct option long_options[] = {
 		  {"help",	       0, NULL, 'h'},
 		  {"sphere",       0, NULL, 's'},
 		  {"torus" ,       0, NULL, 't'},
 		  {"dumbbell",     0, NULL, 'd'},
-		  {"smooth noise", 1, NULL, 'n'},
+		  {"smooth-noise", 1, NULL, 'n'},
+		  {"rand-noise"  , 0, NULL,  0 },
 		  {NULL, 		   0, NULL, 0}
   };
 
   do{
 	  next_opt = getopt_long(argc,argv,short_options,long_options,NULL);
-
 	  switch (next_opt){
 
 	  case 'h':
@@ -586,6 +588,14 @@ main(int argc, char *argv[])
 		  ic_name = optarg;
 		  break;
 
+	  case 0:
+		  if(!strcmp(argv[optextra],"--rand-noise")){
+			  flag_noise = 2;
+			  fprintf(stdout,"Random Noise\n");
+
+		  }
+		  break;
+
 	  case -1:
 		  break;
 
@@ -593,8 +603,8 @@ main(int argc, char *argv[])
 		  print_usage(stdout,1);
 
 	  }
+	  ++optextra;
   }while(next_opt != -1);
-
 
   //Command line options Set
   //End
@@ -676,19 +686,22 @@ main(int argc, char *argv[])
   g_nod = create_grid(dim_nod,dim_space,first,step);
   fprintf(stdout,"Grid Size: %d\n",grid_size);
 
-  if(flag_noise){
-	  fprintf(stdout,"Initial Condition read from file: %s\n",argv[2]);
-	  if(!(nod_values = extractIC(argv[2],grid_size))){
-			  fprintf(stdout,"Error in Read file %s",argv[2]);
+  if(flag_noise == 1){
+	  fprintf(stdout,"Initial Condition read from file: %s\n",ic_name);
+	  if(!(nod_values = extractIC(ic_name,grid_size))){
+			  fprintf(stdout,"Error in Read file %s",ic_name);
 			  exit(EXIT_FAILURE);
 	  }
   }
   else
+  {
   // Eval initial func on grid points	
 	  nod_values = eval_ic_on_grid(grid_size,dim_space,dim_nod,g_nod,u_0,radius);
   	  //nod_values = eval_ic_on_grid(grid_size,dim_space,dim_nod,g_nod,u0_torus,radius);
   	  //nod_values = eval_ic_on_grid(grid_size,dim_space,dim_nod,g_nod,u0_dumbell,radius);
-
+	  if(flag_noise == 2)
+		  nod_values = randNoise(dim_space,g_nod,nod_values,first,last,dim_nod);
+  }
   // MCM method
   int child_status;
   char *arg_list[]={
@@ -712,7 +725,7 @@ main(int argc, char *argv[])
   // Create file with axis nod and IC values
   output_axes_nod(g_nod,dim_space,"arch/axesNodes.dat");
   fprintf(stdout," FILE CREATED \n");
-  if(!flag_noise){
+  if(flag_noise != 1){
 	  make_output_file(u_n,"arch/IC.dat",grid_size);
 	  fprintf(stdout," FILE CREATED \n");
   }
@@ -799,22 +812,19 @@ main(int argc, char *argv[])
     fprintf(stdout,"Time used by CPU : %g sec.\n",(clock()-start_clock)/
 	    (double) CLOCKS_PER_SEC);
     fprintf(stdout,"Do you want to plot the Solution(y/n)?\n");
-    if((s=getchar())=='\n')
-          s = getchar();
+    if((s=getc(stdin))=='\n')
+          s = getc(stdin);
     if(s == 'y'){
-    	/*
-    	if((system("octave scripts/plotSurface.m")))
-    		fprintf(stderr,"Erro in call Octave script\n");
-    	else
-    		++draw_flag;
-    		*/
     	// Duplicate a process and execute the octave program
+    	//
     	spawn("octave",arg_list);
 
     	// Wait untill the child process end
+    	//
     	wait (&child_status);
 
     	// Check exit status of child process
+    	//
     	if(WIFEXITED(child_status)){
     		if(WEXITSTATUS(child_status))
     			fprintf(stderr,"Error in call octave script\n");
@@ -827,11 +837,24 @@ main(int argc, char *argv[])
 
     }
     fprintf(stdout,"Do you want to helve delta T(y/n)?\n");
-    if((s=getchar())=='\n')
-      s = getchar();
-    if(s == 'n')break;
+    if((s=getc(stdin))=='\n')
+      s = getc(stdin);
+    if(s == 'n'){
+    	fprintf(stdout,"Do you want to change the output time (y/n)?\n");
+    	if((s=getc(stdin))=='\n')
+    		s = getc(stdin);
 
-    delta_t = delta_t/2.00f;
+    	if(s == 'y'){
+    		fprintf(stdout,"Insert the new output TIME:");
+    		fscanf(stdin,"%f",&timeto);
+    		delta_t = step[0];
+    	}
+    	else
+    		break;
+    }
+    else
+    	delta_t = delta_t/2.00f;
+
     u_n = vector_copy(nod_values,u_n,grid_size);
     
   }while(s != 'n' && (timeto));
