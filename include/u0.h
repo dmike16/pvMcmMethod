@@ -7,7 +7,7 @@ extern float extract_radius_sphere(const float *radius, float exp_smooth,
 				   float level_set);
 
 inline float 
-u_0(int n, const float *point,const  float *radius)
+u0_sphere(int n, const float *point,const  float *radius)
 {
   const float *p;
   float u = 0.00f;

@@ -523,10 +523,12 @@ static char
 
 }
 
-
+typedef float (*ic_t) (int,const float*,const float*);
+enum { SPHERE, TORUS, DUMBBELL} IC = SPHERE;
 float timeto,level,v0;
 static char *ic_name = "arch/IC.dat";
 static int flag_noise = 0;
+ic_t u_initial[] ={u0_sphere,u0_torus,u0_dumbell};
 
 /* #                   #######
  * #                   #######
@@ -573,11 +575,13 @@ main(int argc, char *argv[])
 				  "************************\n");
 		  break;
 	  case 't':
+		  IC = TORUS;
 		  fprintf(stdout,"************************\n"
 		  				  "*\t TORUS         *\n"
 		  				  "************************\n");
 		  break;
 	  case 'd':
+		  IC = DUMBBELL;
 		  fprintf(stdout,"**************************\n"
 		  				  "*\tDumbbell\t *\n"
 		  				  "**************************\n");
@@ -648,8 +652,10 @@ main(int argc, char *argv[])
   dim_nod = atoi(tmp);
   tmp = strtok(NULL,"\n");
   radius[0] = atof(tmp);
-  //tmp = strtok(NULL,"\n");
-  //radius[1] = atof(tmp);
+  if(IC == TORUS || IC == DUMBBELL){
+	  tmp = strtok(NULL,"\n");
+	  radius[1] = atof(tmp);
+  }
   tmp = strtok(NULL,"\n");
   level = atof(tmp);
   first = (float*) malloc(dim_space*sizeof(float));
@@ -695,14 +701,15 @@ main(int argc, char *argv[])
   }
   else
   {
-  // Eval initial func on grid points	
-	  nod_values = eval_ic_on_grid(grid_size,dim_space,dim_nod,g_nod,u_0,radius);
-  	  //nod_values = eval_ic_on_grid(grid_size,dim_space,dim_nod,g_nod,u0_torus,radius);
-  	  //nod_values = eval_ic_on_grid(grid_size,dim_space,dim_nod,g_nod,u0_dumbell,radius);
+	  // Eval initial func on grid points
+	  //
+	  nod_values = eval_ic_on_grid(grid_size,dim_space,dim_nod,g_nod,u_initial[IC],radius);
+
 	  if(flag_noise == 2)
 		  nod_values = randNoise(dim_space,g_nod,nod_values,first,last,dim_nod);
   }
-  // MCM method
+  // PVMCM method
+  //
   int child_status;
   char *arg_list[]={
 		  "octave",

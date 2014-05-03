@@ -5,7 +5,7 @@
 
 #include "u0.h"
 
-extern float u_0(int n, const float *point, const float *radius);
+extern float u0_sphere(int n, const float *point, const float *radius);
 
 float 
 extract_radius_sphere(const float *radius,float exp_smooth,float level_set)
