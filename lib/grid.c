@@ -25,6 +25,13 @@ struct axes_nod {
 		}								\
 	}while(0)
 
+#define find_pos(va,dim,in,pt,fpt,step) 					\
+	do{														\
+		for(va = 0; va < dim; va++)							\
+			in[va]=(int) ((pt[va] - fpt[va])/step[va]);		\
+	}while(0)
+
+
 
 static gridType 
 init_grid(int dim_space)
@@ -57,56 +64,6 @@ create_grid(int dim_nod, int dim_space,const float *first,
 	return g;
 }
 
-/*gridType
-interpol_points(int dim_space,float *first,float *last)
-{
-	register int i,j;
-	int n;
-	gridType g_plus = init_grid(dim_space);
-
-	printf("Insert the number of interpol points: ");
-	scanf("%d", &n);
-	printf("You have to insert %d points in R^%d\n",n,dim_space);
-
-	for (i = 0; i < dim_space; i++){
-	  printf("Insert all the %d° componets\n",i+1);
-	  g_plus[i] = (struct axes_nod*) malloc(sizeof(struct axes_nod));
-	  check(g_plus[i],"Error in create grid.");
-	  g_plus[i]->dim = n;
-	  g_plus[i]->nod = (float*) malloc(n*sizeof(float));
-	  check(g_plus[i]->nod,"Error in create nodes partition");
-	  for( j = 0; j < n; j++){
-	    scanf("%f", &(g_plus[i]->nod[j]));
-	    while(g_plus[i]->nod[j] < first[i] || 
-		  g_plus[i]->nod[j] > last[i]){
-	      printf("Number not in range.Reinsert\n");
-	      scanf("%f", &(g_plus[i]->nod[j]));
-	    }
-	    
-	  }
-	}
-
-	return g_plus;
-}
-*/
-//int
-//*find_position(int dim_space,const float *g,const float *first,const float *step)
-//{
-//	register int i;
-//	int *index = malloc(dim_space*sizeof(int));
-
-#define find_pos(va,dim,in,pt,fpt,step) 					\
-	do{														\
-		for(va = 0; va < dim; va++)							\
-			in[va]=(int) ((pt[va] - fpt[va])/step[va]);		\
-	}while(0)
-
-
-//for (i = 0; i < dim_space; i++)
-//		index[i] = (int) ((g[i] - first[i])/step[i]);
-
-//	return index;
-//}
 
 float
 *find_point(int dim_space,const int *index, gridType g, float *point)

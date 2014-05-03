@@ -50,17 +50,9 @@
 
 //static char digits[35];
 
-#define index_full(if,dn,x)  ((if) = x[0]+(dn)*x[1]+(dn)*(dn)*x[2])
+#define index_full(idf,dn,x)  ((idf) = x[0]+(dn)*x[1]+(dn)*(dn)*x[2])
 
-#define index_cycle(var,dim,dim_n,x)	\
-	do{									\
-		for(var = 0; var < dim; var++){	\
-			if(x[var] == dim_n-1)		\
-				x[var] = 0;				\
-			else{					    \
-				++x[var];				\
-				break;}}				\
-		}while(0)
+
 
 /*
 static inline int

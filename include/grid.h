@@ -28,4 +28,14 @@ extern void clear_index(void **p, int dim_space);
 
 extern void clear_grid(gridType g,int dim_space);
 
+#define index_cycle(var,dim,dim_n,x)	\
+	do{									\
+		for(var = 0; var < dim; var++){	\
+			if(x[var] == dim_n-1)		\
+				x[var] = 0;				\
+			else{					    \
+				++x[var];				\
+				break;}}				\
+		}while(0)
+
 #endif
