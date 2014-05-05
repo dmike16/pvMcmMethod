@@ -549,6 +549,11 @@ main(int argc, char *argv[])
   // Check the command line options
 
   prog_name = argv[0];
+  if(argc == 1){
+    fprintf(stderr,"Error in usage of program read the help\n");
+    print_usage(stdout,0);
+  }
+
   int next_opt,optextra = 1;
   const char* const short_options = "hn:std";
   const struct option long_options[] = {
