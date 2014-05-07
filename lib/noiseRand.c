@@ -64,9 +64,17 @@ float
 	float sigma;
 
 	fprintf(stdout,"Insert the mean noise value :");
-	fscanf(stdin,"%f",&sigma);
+	if(fscanf(stdin,"%f",&sigma) == EOF){
+		fprintf(stderr,"Error in INPUT\n");
+		exit(EXIT_FAILURE);
+	}
+
 	fprintf(stdout,"Insert the number of noise sphere you want to generate\n");
-	fscanf(stdin,"%d",&numb);
+	if(fscanf(stdin,"%d",&numb) == EOF){
+			fprintf(stderr,"Error in INPUT\n");
+			exit(EXIT_FAILURE);
+		}
+
 
 	if(numb == 0){
 		fprintf(stdout,"No noise add\n");
