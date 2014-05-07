@@ -523,12 +523,28 @@ static char
 
 }
 
+// Pointer to the initial condition function
+//
 typedef float (*ic_t) (int,const float*,const float*);
+
+// Pointe to generic function
+//
+typedef void (*func_t)();
+
+// Enumeration of Method. Default is the vpmcm
+//
+enum { VPMCM, MCM} SC = VPMCM;
+
+// Enumeration of Initial Condition. Default is the sphere
+//
 enum { SPHERE, TORUS, DUMBBELL} IC = SPHERE;
+
+
 float timeto,level,v0;
 static char *ic_name = "arch/IC.dat";
 static int flag_noise = 0;
 ic_t u_initial[] ={u0_sphere,u0_torus,u0_dumbell};
+func_t schema[]={(void*)0,(void*)0};
 
 /* #                   #######
  * #                   #######
@@ -545,8 +561,6 @@ main(int argc, char *argv[])
   mtrace();
 #endif /* MTRACE */
 
-  //
-  // Check the command line options
 
   prog_name = argv[0];
   if(argc == 1){
@@ -554,14 +568,23 @@ main(int argc, char *argv[])
     print_usage(stdout,0);
   }
 
+  // Set the default schema to vpmcm
+  //
+  schema[SC] = (func_t) vpschema;
+
+  //
+  // Check the command line options
+
+
   int next_opt,optextra = 1;
-  const char* const short_options = "hn:std";
+  const char* const short_options = "hmn:std";
   const struct option long_options[] = {
 		  {"help",	       0, NULL, 'h'},
 		  {"sphere",       0, NULL, 's'},
 		  {"torus" ,       0, NULL, 't'},
 		  {"dumbbell",     0, NULL, 'd'},
 		  {"smooth-noise", 1, NULL, 'n'},
+		  {"mcm",		   0, NULL, 'm'},
 		  {"rand-noise"  , 0, NULL,  0 },
 		  {NULL, 		   0, NULL, 0}
   };
@@ -597,10 +620,18 @@ main(int argc, char *argv[])
 		  ic_name = optarg;
 		  break;
 
+	  case 'm':
+		  fprintf(stdout,"************************\n"
+		  		  				  "*\t MCM           *\n"
+		  		  				  "************************\n");
+		  SC = MCM;
+		  break;
+
 	  case 0:
 		  if(!strcmp(argv[optextra],"--rand-noise")){
 			  flag_noise = 2;
 			  fprintf(stdout,"Random Noise\n");
+			  ic_name = "arch/ICrandNoise.dat";
 
 		  }
 		  break;
@@ -738,7 +769,7 @@ main(int argc, char *argv[])
   output_axes_nod(g_nod,dim_space,"arch/axesNodes.dat");
   fprintf(stdout," FILE CREATED \n");
   if(flag_noise != 1){
-	  make_output_file(u_n,"arch/IC.dat",grid_size);
+	  make_output_file(u_n,ic_name,grid_size);
 	  fprintf(stdout," FILE CREATED \n");
   }
 
@@ -858,8 +889,10 @@ main(int argc, char *argv[])
 
     	if(s == 'y'){
     		fprintf(stdout,"Insert the new output TIME:");
-    		fscanf(stdin,"%f",&timeto);
-    		delta_t = step[0];
+    		if(fscanf(stdin,"%f",&timeto) != EOF)
+    			delta_t = step[0];
+    		else
+    			exit(1);
     	}
     	else
     		break;
