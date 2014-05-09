@@ -1,4 +1,4 @@
-obj-y	+= pvmcm_method.o handler_sigdim.o tools/
+obj-y	+= pvmcm_method.o mcmschema.o handler_sigdim.o tools/
 clean-files := *~ *.o *.d
 
 # Enable Profiling Data

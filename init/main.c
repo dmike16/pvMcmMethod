@@ -27,6 +27,7 @@
 #include "eval_ic_on_grid.h"
 //#include "eval_method_errno.h"
 #include "pvschema_core.h"
+#include "mcmschema.h"
 #include "vector_copy.h"
 #include "heaviSide.h"
 #include "noiseRand.h"
@@ -63,12 +64,13 @@ static void
 print_usage(FILE *stream,int exit_code){
 	fprintf(stream,"Usage: %s options input-file.dat\n",prog_name);
 	fprintf(stream,
-			" -h  --help          			Display usage information\n"
-			" -s  --sphere        			set IC -> Sphere\n"
-			" -t  --torus         			set IC -> Torus\n"
-			" -d  --dumbbell      		  	set IC -> Dumbbell\n"
+			" -h  --help                    Display usage information\n"
+			" -s  --sphere (default)        set IC -> Sphere\n"
+			" -t  --torus                   set IC -> Torus\n"
+			" -d  --dumbbell                set IC -> Dumbbell\n"
 			" -n  --smooth-noise filename   Smooth an image with noise\n"
-			"     --rand-noise                  Noise generated random\n");
+			" -m  --mcm                     MCM schema\n"
+			"     --rand-noise              Noise generated random\n");
 	exit(exit_code);
 }
 
@@ -110,7 +112,7 @@ make_output_file(const float *buffer, char *name,int dimension)
   fd = open (name,O_WRONLY | O_CREAT | O_TRUNC,0666);
 
   if(fd == -1){
-    fprintf(stderr,"Erro in open file: %s\n",strerror(errno));
+    fprintf(stderr,"Error in open file: %s\n",strerror(errno));
     return 1;
   }
 
@@ -527,9 +529,10 @@ static char
 //
 typedef float (*ic_t) (int,const float*,const float*);
 
-// Pointe to generic function
+// Pointer to schema function
 //
-typedef void (*func_t)();
+typedef void (*func_t)(int,int,int,float*,const float*,
+		const float*,float,gridType,const float*,const float*);
 
 // Enumeration of Method. Default is the vpmcm
 //
@@ -544,7 +547,7 @@ float timeto,level,v0;
 static char *ic_name = "arch/IC.dat";
 static int flag_noise = 0;
 ic_t u_initial[] ={u0_sphere,u0_torus,u0_dumbell};
-func_t schema[]={(void*)0,(void*)0};
+func_t schema[]={(func_t) vpschema,(func_t)mcmschema};
 
 /* #                   #######
  * #                   #######
@@ -561,16 +564,12 @@ main(int argc, char *argv[])
   mtrace();
 #endif /* MTRACE */
 
-
+fprintf(stdout,"%d \n",SC);
   prog_name = argv[0];
   if(argc == 1){
     fprintf(stderr,"Error in usage of program read the help\n");
     print_usage(stdout,0);
   }
-
-  // Set the default schema to vpmcm
-  //
-  schema[SC] = (func_t) vpschema;
 
   //
   // Check the command line options
@@ -712,7 +711,7 @@ main(int argc, char *argv[])
 	
   // Print the values read from file
   fprintf(stdout,"********************************\n");
-  fprintf(stdout,"Values read from %s :\n",argv[1]);
+  fprintf(stdout,"Values read from %s :\n",argv[optind]);
   fprintf(stdout,"Space R^%d\n""Number of nodes %d\n",dim_space,dim_nod);
   fprintf(stdout,"  °n        Axes Range         Spatial Step\n");
   for( i=0; i < dim_space; i++)
@@ -812,11 +811,9 @@ main(int argc, char *argv[])
       update_bar(bar,18,i,tot_iter);
       fprintf(stdout,"\r[%s]%d%%",bar,100*i/tot_iter);
       fflush(stdout);
-      vpschema(dim_space,grid_size,dim_nod,u_n_plus_one,u_n,
-		    step,delta_t,g_nod,first,last);
 
-     // vpschema_core(dim_space,grid_size,dim_nod,u_n_plus_one,u_n,
-     // 		    step,delta_t,g_nod,first,last,v0);
+      schema[SC](dim_space,grid_size,dim_nod,u_n_plus_one,u_n,
+		    step,delta_t,g_nod,first,last);
 
       time += delta_t;
       _check_time(time,timeto);
