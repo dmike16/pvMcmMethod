@@ -61,7 +61,7 @@ float
 	float *u_noise = u;
 	float **ra_center;
 	float *ra_radius;
-	float sigma;
+	float sigma,b;
 
 	fprintf(stdout,"Insert the mean noise value :");
 	if(fscanf(stdin,"%f",&sigma) == EOF){
@@ -69,11 +69,18 @@ float
 		exit(EXIT_FAILURE);
 	}
 
-	fprintf(stdout,"Insert the number of noise sphere you want to generate\n");
+	fprintf(stdout,"Insert the limit radius value:");
+		if(fscanf(stdin,"%f",&b) == EOF){
+				fprintf(stderr,"Error in INPUT\n");
+				exit(EXIT_FAILURE);
+			}
+
+	fprintf(stdout,"Insert the number of noise sphere you want to generate:");
 	if(fscanf(stdin,"%d",&numb) == EOF){
 			fprintf(stderr,"Error in INPUT\n");
 			exit(EXIT_FAILURE);
 		}
+
 
 
 	if(numb == 0){
@@ -93,7 +100,7 @@ float
 	// and small random radius
 	//
 	srand((unsigned)time(NULL));
-	float a = 0.0f,b = 1.0f;
+	float a = 0.0f;
 
 	for(i = 0; i < numb; i++){
 		ra_center[i] = malloc(dim*sizeof(float));
@@ -117,10 +124,13 @@ float
 		abort();
 	}
 
+	float tmp_rand;
 	for(i = 0; i < dim_n; i++){
 		x = find_point(dim,id,g,x);
-		if(makeNoise(numb,dim,(const float**)ra_center,ra_radius,x))
-			u_noise[i] += sigma;
+		if(makeNoise(numb,dim,(const float**)ra_center,ra_radius,x)){
+			tmp_rand = 0.00f +(sigma)*(float)rand()/RAND_MAX;
+			u_noise[i] += tmp_rand;
+		}
 		index_cycle(j,dim,nod,id);
 	}
 	printf("Noise ADD\n");
