@@ -138,7 +138,7 @@ static float
 }
 
 float
-interpol_fun(int dim_space,gridType g_nod,const float *g_point,
+interpol_fun(int dim_space,int dim_nod, gridType g_nod,const float *g_point,
 	     const float *first, const float *step, float(*f)(int,const float*))
 {
   int num_vertex = (int)pow(2,dim_space);
@@ -148,7 +148,7 @@ interpol_fun(int dim_space,gridType g_nod,const float *g_point,
   int **index;
 
   
-  index = find_index_region(g_point,dim_space,first,step);
+  index = find_index_region(g_point,dim_space,dim_nod,first,step);
   point = find_region_grid(dim_space,g_nod,(const int**)index);
   point_value = find_point_value(dim_space,num_vertex,(const float**)point,f);   
   
@@ -182,10 +182,8 @@ interpol_fun_discrete(int dim_space,int dim_nod,gridType g_nod,
   }
 
   
-  index = find_index_region(g_point,dim_space,first,step);
+  index = find_index_region(g_point,dim_space,dim_nod,first,step);
   point = find_region_grid(dim_space,g_nod,(const int**)index);
- // point_value = find_point_value_discrete(dim_space,dim_nod,num_vertex,
-//					  (const int**)index,nod_values);
   search_values(dim_space,dim_nod,num_vertex,index,point_value,nod_values);
   new_value = interpol_linear_tree(dim_space,num_vertex,g_point,
 				   (const float **)point,point_value);    

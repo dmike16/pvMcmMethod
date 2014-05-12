@@ -17,7 +17,7 @@ extern int *find_position(int dim_space, const float *g, const float *first,
 extern float *find_point(int dim_space, const int *index, gridType g,
 			 float *point);
 
-extern int **find_index_region(const float *g, int dim_space, 
+extern int **find_index_region(const float *g, int dim_space, int dim_nod,
 			       const float *first, const float *step);
 
 extern float **find_region_grid(int dim_space, gridType g,const int **index);

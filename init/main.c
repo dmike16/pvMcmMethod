@@ -564,7 +564,6 @@ main(int argc, char *argv[])
   mtrace();
 #endif /* MTRACE */
 
-fprintf(stdout,"%d \n",SC);
   prog_name = argv[0];
   if(argc == 1){
     fprintf(stderr,"Error in usage of program read the help\n");
@@ -889,7 +888,7 @@ fprintf(stdout,"%d \n",SC);
     		if(fscanf(stdin,"%f",&timeto) != EOF)
     			delta_t = step[0];
     		else
-    			exit(1);
+    			break;
     	}
     	else
     		break;

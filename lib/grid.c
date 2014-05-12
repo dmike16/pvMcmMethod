@@ -25,10 +25,12 @@ struct axes_nod {
 		}								\
 	}while(0)
 
-#define find_pos(va,dim,in,pt,fpt,step) 					\
-	do{														\
-		for(va = 0; va < dim; va++)							\
-			in[va]=(int) ((pt[va] - fpt[va])/step[va]);		\
+#define find_pos(va,dim,d_nod,in,pt,fpt,step) 					\
+	do{															\
+		for(va = 0; va < dim; va++){							\
+			in[va]=(int) ((pt[va] - fpt[va])/step[va]);			\
+			if(in[va] == d_nod-1)--in[va];						\
+		}														\
 	}while(0)
 
 
@@ -99,18 +101,18 @@ float
 }
 
 int
-**find_index_region(const float *g, int dim_space, const float *first, 
+**find_index_region(const float *g, int dim_space, int dim_nod, const float *first,
 		    const float *step)
 {
-  register  int i,j; //mv_ = 0,mv_up = 1,mv_tmp = 0,i_tmp = 0,i_up,flag;
+  register  int i,j;
   int num_vertex = (int) powf(2,dim_space);
   int **index = malloc(num_vertex*sizeof(int*));
   
   index[0] = malloc(dim_space*sizeof(int));
   check(index[0],"**Error during allocation of memory \n");
-  find_pos(i,dim_space,index[0],g,first,step);
-  //flag = 1,i_up = 0;
+  find_pos(i,dim_space,dim_nod,index[0],g,first,step);
   
+
   for (i = 1; i < num_vertex; i++){
     index[i] = malloc(dim_space*sizeof(int));
     check(index[i],"**Error during allocation of memory \n");
@@ -119,33 +121,6 @@ int
     		index[i][j]=index[0][j]+1;
     	else
     		index[i][j]=index[0][j];
-    /*if(mv_tmp != 0){
-      i_tmp = i_up;
-      if (flag == 4){
-	mv_up ++;
-	mv_ = mv_up;
-	flag = 0;
-	i_up = i;
-      }
-      else 
-	mv_ = 1;
-      
-    }
-    else {
-      mv_ = 0;
-      i_tmp = i-1;
-    }
-    if( mv_up == dim_space -1)mv_up = 1;		       	       
-    for (j = 0; j < dim_space; j++)
-      if (j == mv_)
-	index[i][j] = index[i_tmp][mv_] + 1;
-      else
-	index[i][j] = index[i_tmp][j];
-    flag++;
-    if (mv_tmp == 0)
-      mv_tmp++;
-    else
-      mv_tmp--;*/
   }
   
   return index;
