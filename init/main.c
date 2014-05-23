@@ -62,15 +62,16 @@ static char *prog_name;
 
 static void
 print_usage(FILE *stream,int exit_code){
-	fprintf(stream,"Usage: %s options input-file.dat\n",prog_name);
+	fprintf(stream,"Usage: %s options [input-file.dat]\n",prog_name);
 	fprintf(stream,
 			" -h  --help                    Display usage information\n"
-			" -s  --sphere (default)        set IC -> Sphere\n"
-			" -t  --torus                   set IC -> Torus\n"
-			" -d  --dumbbell                set IC -> Dumbbell\n"
+			" -s  --sphere (default)        Set IC -> Sphere\n"
+			" -t  --torus                   Set IC -> Torus\n"
+			" -d  --dumbbell                Set IC -> Dumbbell\n"
 			" -n  --smooth-noise filename   Smooth an image with noise\n"
 			" -m  --mcm                     MCM schema\n"
-			"     --rand-noise              Noise generated random\n");
+			"     --rand-noise              Noise generated random\n"
+			" -g  --gargoyle                Set IC -> Gargoyle not need an input file\n");
 	exit(exit_code);
 }
 
@@ -540,7 +541,7 @@ enum { VPMCM, MCM} SC = VPMCM;
 
 // Enumeration of Initial Condition. Default is the sphere
 //
-enum { SPHERE, TORUS, DUMBBELL} IC = SPHERE;
+enum { SPHERE, TORUS, DUMBBELL, GARG} IC = SPHERE;
 
 
 float timeto,level,v0;
@@ -575,7 +576,7 @@ main(int argc, char *argv[])
 
 
   int next_opt,optextra = 1;
-  const char* const short_options = "hmn:std";
+  const char* const short_options = "hmn:stdg";
   const struct option long_options[] = {
 		  {"help",	       0, NULL, 'h'},
 		  {"sphere",       0, NULL, 's'},
@@ -584,6 +585,7 @@ main(int argc, char *argv[])
 		  {"smooth-noise", 1, NULL, 'n'},
 		  {"mcm",		   0, NULL, 'm'},
 		  {"rand-noise"  , 0, NULL,  0 },
+		  {"gargoyle"    , 0, NULL, 'g'},
 		  {NULL, 		   0, NULL, 0}
   };
 
@@ -625,6 +627,13 @@ main(int argc, char *argv[])
 		  SC = MCM;
 		  break;
 
+	  case 'g':
+		  fprintf(stdout,"**********************\n"
+				  "*\t GARGOYLE    *\n"
+				  "**********************\n");
+		  IC = GARG;
+		  break;
+
 	  case 0:
 		  if(!strcmp(argv[optextra],"--rand-noise")){
 			  flag_noise = 2;
@@ -659,58 +668,73 @@ main(int argc, char *argv[])
   float time,radius[2];
   
   // Read from the file
-  int fd;
-  struct stat file_info;
-  char *data,*tmp;
-  size_t length;
+
+
+  if(IC != GARG){
+	  int fd;
+	  struct stat file_info;
+	  char *data,*tmp;
+	  size_t length;
+	  if((fd = open (argv[optind], O_RDONLY)) == -1){
+		  fprintf(stderr,"Error in open file: %s\n",strerror(errno));
+		  exit(EXIT_FAILURE);
+	  }
+	  fstat (fd,&file_info);
+	  length = file_info.st_size;
   
-  if((fd = open (argv[optind], O_RDONLY)) == -1){
-	  fprintf(stderr,"Error in open file: %s\n",strerror(errno));
-	  exit(EXIT_FAILURE);
-  }
-  fstat (fd,&file_info);
-  length = file_info.st_size;
-  
-  data =  (char*) malloc (length);
-  if((read (fd,data,length))== -1){
-    fprintf(stderr,"Error in reading the file %s\n",argv[optind]);
-    close(fd);
-    exit(1);
-  }
-  close(fd);
-  tmp = strtok(data,"\n");
-  timeto = atof(tmp);
-  tmp = strtok(NULL, "\n");
-  dim_space = atoi(tmp);
-  tmp = strtok(NULL, "\n");
-  dim_nod = atoi(tmp);
-  tmp = strtok(NULL,"\n");
-  radius[0] = atof(tmp);
-  if(IC == TORUS || IC == DUMBBELL){
+	  data =  (char*) malloc (length);
+	  if((read (fd,data,length))== -1){
+		  fprintf(stderr,"Error in reading the file %s\n",argv[optind]);
+		  close(fd);
+		  exit(1);
+	  }
+	  close(fd);
+	  tmp = strtok(data,"\n");
+	  timeto = atof(tmp);
+	  tmp = strtok(NULL, "\n");
+	  dim_space = atoi(tmp);
+	  tmp = strtok(NULL, "\n");
+	  dim_nod = atoi(tmp);
 	  tmp = strtok(NULL,"\n");
-	  radius[1] = atof(tmp);
+	  radius[0] = atof(tmp);
+	  if(IC == TORUS || IC == DUMBBELL){
+		  tmp = strtok(NULL,"\n");
+		  radius[1] = atof(tmp);
+	  }
+	  tmp = strtok(NULL,"\n");
+	  level = atof(tmp);
+	  first = (float*) malloc(dim_space*sizeof(float));
+	  last = (float*) malloc(dim_space*sizeof(float));
+	  for (i = 0; (tmp = strtok(NULL, "\n")) != NULL && i < dim_space;i++){
+
+		  first[i]=(float)atof(tmp);
+		  last[i] = (float)atof(tmp = strtok(NULL,"\n"));
+
+	  }
+
+	  free((void*)data);
+
+	  //End read from the file
+	  fprintf(stdout,"********************************\n");
+	  fprintf(stdout,"Values read from %s :\n",argv[optind]);
   }
-  tmp = strtok(NULL,"\n");
-  level = atof(tmp);
-  first = (float*) malloc(dim_space*sizeof(float));
-  last = (float*) malloc(dim_space*sizeof(float));
-  for (i = 0; (tmp = strtok(NULL, "\n")) != NULL && i < dim_space;i++){
-
-	first[i]=(float)atof(tmp);
-    last[i] = (float)atof(tmp = strtok(NULL,"\n"));
-
+  else
+  {
+	  timeto =  0.0f;
+	  dim_space = 3;
+	  dim_nod = 149;
+	  first = (float*) malloc(dim_space*sizeof(float));
+	  last = (float*) malloc(dim_space*sizeof(float));
+	  first[0]=first[1]=first[2]=1;
+	  last[0]=last[1]=last[2]=149;
+	  level = 0.0f;
   }
-
-  free((void*)data);
-  //End read from the file
-  
   step = malloc(dim_space*sizeof(float));
   for (i = 0; i < dim_space; i++)
     step[i] = fabs(last[i] - first[i])/(dim_nod- 1.00f);
 	
   // Print the values read from file
   fprintf(stdout,"********************************\n");
-  fprintf(stdout,"Values read from %s :\n",argv[optind]);
   fprintf(stdout,"Space R^%d\n""Number of nodes %d\n",dim_space,dim_nod);
   fprintf(stdout,"  °n        Axes Range         Spatial Step\n");
   for( i=0; i < dim_space; i++)
@@ -735,13 +759,21 @@ main(int argc, char *argv[])
   }
   else
   {
-	  // Eval initial func on grid points
-	  //
-	  nod_values = eval_ic_on_grid(grid_size,dim_space,dim_nod,g_nod,u_initial[IC],radius);
+	  if(IC != GARG)
+		  // Eval initial func on grid points
+		  //
+		  nod_values = eval_ic_on_grid(grid_size,dim_space,dim_nod,g_nod,u_initial[IC],radius);
+
+	  else
+	  {
+		  fprintf(stdout,"CIAO\n");
+		  exit(1);
+	  }
 
 	  if(flag_noise == 2)
 		  nod_values = randNoise(dim_space,g_nod,nod_values,first,last,dim_nod);
   }
+
   // PVMCM method
   //
   int child_status;
@@ -772,19 +804,6 @@ main(int argc, char *argv[])
   }
 
   fprintf(stdout,"Time to eval : %f\n",timeto);
-
-
- /*
-  // Eval the volume preserving constant for the sphere
-  //float r0= extract_radius_sphere(radius,4,level);
-  //float r0 = sqrt((*radius)*(*radius) -level);
-  //fprintf(stdout,"r0=%f\n",r0);
-  //v0=(4.00f/3.00f)*pi*powf(r0,3);
-  //float vol_preserv = 2.00f*powf(4.00f*pi/(3.00f*v0),2.00f/3.00f);
-  //float r0 = radius[0]*radius[0] +level;
-  //v0 = (2.00f)*pi*pi*r0*radius[1];
-  //v0 = 2.00f*powf(4.00f*pi/(3.00f*v0),2.00f/3.00f);
- */
 
 
   //PVMCM method iteration
