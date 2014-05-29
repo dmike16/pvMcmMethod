@@ -25,6 +25,7 @@
 #include "dumbell.h"
 #include "interpol_fun.h"
 #include "eval_ic_on_grid.h"
+#include "gargolyeIN.h"
 //#include "eval_method_errno.h"
 #include "pvschema_core.h"
 #include "mcmschema.h"
@@ -315,12 +316,12 @@ autogenerate_octave_script(char *default_name,char *ic_name,int dim_nod,
  vec_next->iov_len = 29 + 2*strlen(range);
  ++vec_next;
 
- vec_next->iov_base = "      v(j,k,i)=dataf2(id);\n";
+ vec_next->iov_base = "      v(k,j,i)=dataf2(id);\n";
  vec_next->iov_len = 27;
  ++vec_next;
  
  if(!draw_flag){
-	 vec_next->iov_base = "      u(j,k,i)=dataf3(id);\n";
+	 vec_next->iov_base = "      u(k,j,i)=dataf3(id);\n";
 	 vec_next->iov_len = 27;
 	 ++vec_next;
  }
@@ -347,7 +348,7 @@ autogenerate_octave_script(char *default_name,char *ic_name,int dim_nod,
 	 ++vec_next;
  }
  
- vec_next->iov_base = "view(-38,20);\n";
+ vec_next->iov_base = "view(146,25);\n";
  vec_next->iov_len = 14;
  ++vec_next;
  
@@ -366,7 +367,7 @@ autogenerate_octave_script(char *default_name,char *ic_name,int dim_nod,
 
 	 isosurface_1 = malloc(40+strlen(level_set)+1);
 	 _allocate_error(isosurface_1);
-	 strcpy(isosurface_1,"[faces,verts,c]=isosurface(X,Y,Z,u,");
+	 strcpy(isosurface_1,"[faces,verts,c]=isosurface(Z,Y,X,u,");
 	 strcat(isosurface_1,level_set);
 	 strcat(isosurface_1,",Y);\n");
 
@@ -417,15 +418,15 @@ autogenerate_octave_script(char *default_name,char *ic_name,int dim_nod,
 	 vec_next->iov_len = strlen(_patch_2);
 	 ++vec_next;
  
-	 vec_next->iov_base = "set(p,\"FaceLighting\",\"phong\");\n";
-	 vec_next->iov_len = 31;
+	 vec_next->iov_base = "%set(p,\"FaceLighting\",\"phong\");\n";
+	 vec_next->iov_len = 32;
 	 ++vec_next;
  
 	 vec_next->iov_base = "figure()\n";
 	 vec_next->iov_len = 9;
 	 ++vec_next;
 
-	 vec_next->iov_base = "view(-38,20);\n";
+	 vec_next->iov_base = "view(146,25);\n";
 	 vec_next->iov_len = 14;
 	 ++vec_next;
  }
@@ -438,7 +439,7 @@ autogenerate_octave_script(char *default_name,char *ic_name,int dim_nod,
 
  isosurface_2 = malloc(40+strlen(level_set)+1);
  _allocate_error(isosurface_2);
- strcpy(isosurface_2,"[faces,verts,c]=isosurface(X,Y,Z,v,");
+ strcpy(isosurface_2,"[faces,verts,c]=isosurface(Z,Y,X,v,");
  strcat(isosurface_2,level_set);
  strcat(isosurface_2,",Y);\n");
 
@@ -456,8 +457,8 @@ autogenerate_octave_script(char *default_name,char *ic_name,int dim_nod,
  vec_next->iov_len = strlen(_patch_4);
  ++vec_next;
 
- vec_next->iov_base = "set(p,\"FaceLighting\",\"phong\");\n";
- vec_next->iov_len = 31;
+ vec_next->iov_base = "%set(p,\"FaceLighting\",\"phong\");\n";
+ vec_next->iov_len = 32;
  ++vec_next;
 
  vec_next->iov_base = "pause";
@@ -720,13 +721,13 @@ main(int argc, char *argv[])
   }
   else
   {
-	  timeto =  0.0f;
+          timeto =  0.05f;
 	  dim_space = 3;
 	  dim_nod = 149;
 	  first = (float*) malloc(dim_space*sizeof(float));
 	  last = (float*) malloc(dim_space*sizeof(float));
 	  first[0]=first[1]=first[2]=1;
-	  last[0]=last[1]=last[2]=149;
+	  last[0]=last[1]=last[2]=13;
 	  level = 0.0f;
   }
   step = malloc(dim_space*sizeof(float));
@@ -766,8 +767,7 @@ main(int argc, char *argv[])
 
 	  else
 	  {
-		  fprintf(stdout,"CIAO\n");
-		  exit(1);
+	    nod_values = gargolyeIN(grid_size,step[0],1.00f);
 	  }
 
 	  if(flag_noise == 2)
@@ -783,7 +783,8 @@ main(int argc, char *argv[])
 		  NULL
   };
   int tot_iter;	
-  float delta_t = step[0];
+  float delta_t_orig = powf(step[0],1.0);
+  float delta_t = delta_t_orig;
   float *u_n_plus_one = malloc(grid_size*sizeof(float));
   float *u_n = malloc(grid_size*sizeof(float));
   char *default_name = NULL;
@@ -812,11 +813,11 @@ main(int argc, char *argv[])
   float eps = 1.5*step[0];
   v0 = 0.00f;
   for(i=0;i<grid_size;i++)
-       	v0 += 1-hvSide(level-u_n[i],eps);
+       	v0 += 1-hvSide(u_n[i]-level,eps);
   v0 *= powf(step[0],3);
   printf("V0 = %.2f\n",v0);
   do{
-	vf = 0.00f;
+    vf = 0.00f;
     tot_iter =  timeto/delta_t;
     memset(bar,' ',18);
     bar[18] = '\0';
@@ -860,7 +861,7 @@ main(int argc, char *argv[])
     //Eval the Norm infinity of the Error  
     //eval_method_errno(u_n_plus_one,u_vp_sphere,grid_size);
     for(i=0;i<grid_size;i++)
-    	vf += 1-hvSide(level-u_n_plus_one[i],eps);
+    	vf += 1-hvSide(u_n_plus_one[i]-level,eps);
 
     printf("|%.2f -%.2f| = %e\n",v0,vf*powf(step[0],3),fabs(v0-(vf*powf(step[0],3))));
     //Generate octave script in order to plot the solution
@@ -905,7 +906,7 @@ main(int argc, char *argv[])
     	if(s == 'y'){
     		fprintf(stdout,"Insert the new output TIME:");
     		if(fscanf(stdin,"%f",&timeto) != EOF)
-    			delta_t = step[0];
+    			delta_t = delta_t_orig;
     		else
     			break;
     	}
