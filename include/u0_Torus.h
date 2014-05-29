@@ -25,7 +25,7 @@ u0_torus(int n, const float *point,const float *r)
 		  u_z += (point[i])*(point[i]);
   }
 
-    return r_two - powf((r[1]-sqrt(u)),2) - u_z;
+    return -r_two + powf((r[1]-sqrt(u)),2) + u_z;
 
 }
 

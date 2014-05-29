@@ -51,16 +51,30 @@ static inline float
 
     //  Approximation with finite diff centered :
     //    .) go up
-    ++index[i];
-    index_full(IF,dim_nod,index);
-    --index[i];
+    if(++index[i] > dim_nod -1)
+      {
+	--index[i];
+	index_full(IF,dim_nod,index);
+      }
+    else
+      {
+	index_full(IF,dim_nod,index);
+	--index[i];
+      }
     
     du_up = func[IF];
     
     //    .) go down
-    --index[i];
-    index_full(IF,dim_nod,index);
-    ++index[i];
+    if(--index[i] < 0)
+      {
+	++index[i];
+	index_full(IF,dim_nod,index);
+      }
+    else
+      {
+	index_full(IF,dim_nod,index);
+	++index[i];
+      }
     
     du_down = func[IF];
 
@@ -148,15 +162,29 @@ mcm_below_threshold(int *index, int dim_nod, const float *u_n)
   float u_mcm = 0.0f;
 
   for(i = 0; i < DIM_SPACE; i++){
-    ++index[i];
-    index_full(IF,dim_nod,index);
-    --index[i];
+    if(++index[i] > dim_nod -1)
+      {
+	--index[i];
+	index_full(IF,dim_nod,index);
+      }
+    else
+      {
+	index_full(IF,dim_nod,index);
+	--index[i];
+      }
     
     u_mcm += u_n[IF];
 
-    --index[i];
-    index_full(IF,dim_nod,index);
-    ++index[i];
+    if(--index[i] < 0)
+      {
+	++index[i];
+	index_full(IF,dim_nod,index);
+      }
+    else
+      {
+	index_full(IF,dim_nod,index);
+	++index[i];
+      }
     
     u_mcm += u_n[IF];
   }

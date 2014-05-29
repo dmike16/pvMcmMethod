@@ -129,7 +129,7 @@ float
 		x = find_point(dim,id,g,x);
 		if(makeNoise(numb,dim,(const float**)ra_center,ra_radius,x)){
 			tmp_rand = 0.00f +(sigma)*(float)rand()/RAND_MAX;
-			u_noise[i] += tmp_rand;
+			u_noise[i] -= tmp_rand;
 		}
 		index_cycle(j,dim,nod,id);
 	}

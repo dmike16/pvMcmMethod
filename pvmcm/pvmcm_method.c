@@ -70,16 +70,30 @@ static inline float
 
     //  Approximation with finite diff centered :
     //    .) go up
-    ++index[i];
-    index_full(IF,dim_nod,index);
-    --index[i];
+    if((++index[i]) > dim_nod-1)
+      {
+	--index[i];
+	index_full(IF,dim_nod,index);
+      }
+    else
+      {
+	index_full(IF,dim_nod,index);
+	--index[i];
+      }
     
     du_up = func[IF];
     
     //    .) go down
-    --index[i];
-    index_full(IF,dim_nod,index);
-    ++index[i];
+    if((--index[i]) < 0)
+      {
+	++index[i];
+	index_full(IF,dim_nod,index);
+      }
+    else
+      {
+	index_full(IF,dim_nod,index);
+	++index[i];
+      }
     
     du_down = func[IF];
 
@@ -226,15 +240,29 @@ static inline float
 	  }
 	  wb -= br;
 	  for(i = 0; i < DIM_SPACE; i++){
-	  	++index[i];
+	    if(++index[i] > dim_nod -1)
+	      {
+		--index[i];
 	  	index_full(IF,dim_nod,index);
+	      }
+	    else
+	      {
+		index_full(IF,dim_nod,index);
 	  	--index[i];
+	      }
 
-	  	u_mcm += u_new[IF];
+	    u_mcm += u_new[IF];
 
-	  	--index[i];
+	    if(--index[i] < 0)
+	      {
+		++index[i];
 	  	index_full(IF,dim_nod,index);
+	      }
+	    else
+	      {
+		index_full(IF,dim_nod,index);
 	  	++index[i];
+	      }
 
 	  	u_mcm += u_new[IF];
 	   }
@@ -256,21 +284,36 @@ mcm_below_threshold(int *index, int dim_nod,const float *u_n)
 
 
   for(i = 0; i < DIM_SPACE; i++){
-	++index[i];
-	index_full(IF,dim_nod,index);
-	--index[i];
-
-	u_mcm += u_n[IF];
-
+    if((++index[i]) > dim_nod -1)
+      {
 	--index[i];
 	index_full(IF,dim_nod,index);
+      }
+    else 
+      {
+	index_full(IF,dim_nod,index);
+	--index[i];
+      }
+    
+    u_mcm += u_n[IF];
+
+    if((--index[i]) < 0)
+      {
 	++index[i];
+	index_full(IF,dim_nod,index);
+      }
+    else 
+      {	 
+	index_full(IF,dim_nod,index);
+	++index[i];
+      }
 
 	u_mcm += u_n[IF];
   }
 
   return u_mcm;
 }
+
 
 static inline void
 vpschema_core(int grid_size,int dim_nod,float *u_n_plus_one,
@@ -294,13 +337,14 @@ vpschema_core(int grid_size,int dim_nod,float *u_n_plus_one,
 
   for(i = 0; i < grid_size; i++){
 
-    if((out_boundary(DIM_SPACE,dim_nod,index)))
-     {
+    //   if((out_boundary(DIM_SPACE,dim_nod,index)))
+    //{
 	eval_gradient(dim_nod,index,Du,u_n,step[0]);
 	if(norm_R3(Du) <= C*step[0] || p1p3(Du) <= C*step[0])
 	  {
-		u_n_plus_one[i] = u_n[i];
-	    write_byte += write(fd, index, sizeof(int)*DIM_SPACE);
+	    //u_n_plus_one[i] = u_n[i];
+	    //write_byte += write(fd, index, sizeof(int)*DIM_SPACE);
+	    u_n_plus_one[i] = mcm_below_threshold(index,dim_nod,u_n)/6.00f;
 	  }
 
 	else
@@ -309,9 +353,9 @@ vpschema_core(int grid_size,int dim_nod,float *u_n_plus_one,
 	    u_n_plus_one[i] = pvmcm_above_threshold(index,ni,u_n,delta_t,step,
 						  first,last,dim_nod,g_nod,I_n);
 	  }
-     }
-    else
-      u_n_plus_one[i] = u_n[i];
+	//  }
+  //else
+  //  u_n_plus_one[i] = u_n[i];
 
     index_cycle(j,DIM_SPACE,dim_nod,index);
 
@@ -319,14 +363,14 @@ vpschema_core(int grid_size,int dim_nod,float *u_n_plus_one,
 
 
   // If there are some points below the threshold we use an "ad hoc" method
-  if(write_byte != 0)
+   if(write_byte != 0)
     {
 
       lseek(fd,0,SEEK_SET);
       u_n_plus_one = pvmcm_below_threshold(fd,write_byte,index,dim_nod,u_n_plus_one);
 
-    }
-  close(fd);
+      }
+    close(fd);
 }
 
 void 
@@ -353,23 +397,22 @@ vpschema(int dim_space,int grid_size,int dim_nod,float *u_n_plus_one,
   sigaction(SIGDIM, &sa_def, NULL);
   
   int index[DIM_SPACE]={0,0,0};
-  //int fd;
   float Du[DIM_SPACE];
   float ni[DIM_SPACE][NUM_VEC];
   float eps = step[0]*1.5f;
   float I_n = 0.0f;
-  float tmp_delta;
+  float tmp_delta;;
   float* w = malloc(grid_size*sizeof(float));
 
   for(i = 0; i < grid_size; i++){
     //index_split(i,index,dim_nod);
-    if((out_boundary(DIM_SPACE,dim_nod,index)))
-     {
+    //if((out_boundary(DIM_SPACE,dim_nod,index)))
+    //{
 	eval_gradient(dim_nod,index,Du,u_n,step[0]);
 	if(norm_R3(Du) <= C*step[0] || p1p3(Du) <= C*step[0])
 	  {
-		w[i] = (mcm_below_threshold(index,dim_nod,u_n)-6.00f*u_n[i])*(1/(step[0]*step[0]));
-
+	    w[i] = (mcm_below_threshold(index,dim_nod,u_n)-6.00f*u_n[i])*(1/(step[0]*step[0]));
+	    
 	  }
 				
 	else
@@ -380,24 +423,25 @@ vpschema(int dim_space,int grid_size,int dim_nod,float *u_n_plus_one,
 
 
 	  }
-     }
-    else
-      w[i] = u_n[i];
+	//}
+	//else
+	//w[i] = u_n[i];
     
-    tmp_delta = delta_func((level-u_n[i]),eps);
-    I_n += (w[i]*tmp_delta);
-
+	tmp_delta = delta_func((u_n[i]-level),eps);
+	I_n += (w[i]*tmp_delta);
+	
 
     index_cycle(j,DIM_SPACE,dim_nod,index);
 
   }
 
-  I_n = -(I_n * powf(step[0],DIM_SPACE))/(3.00f*v0);
-
+  I_n = (I_n * powf(step[0],DIM_SPACE))/(3.00f*v0);
+  printf(" I_n=%.4e\n",I_n);
 
   free(w);
 
-vpschema_core(grid_size,dim_nod,u_n_plus_one,u_n,
+
+  vpschema_core(grid_size,dim_nod,u_n_plus_one,u_n,
       		    step,delta_t,g_nod,first,last,I_n);
 
 }

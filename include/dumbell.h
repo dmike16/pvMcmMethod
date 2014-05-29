@@ -31,7 +31,7 @@ u0_dumbell(int n, const float *point,const  float *radius)
   if(u2 > u) u = u2;
   if(u3 > u) u = u3;
 
-  return u;
+  return (u == 0 ? u : -u);
 
 }
 

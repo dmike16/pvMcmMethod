@@ -17,7 +17,7 @@ u0_sphere(int n, const float *point,const  float *radius)
     u += (*p)*(*p); 
   if (u <= r_two)
     //return powf((r_two-u)/(r_two),4);
-	  return r_two - u;
+	  return -r_two +u;
   else 
     return 0.0f;
   
