@@ -10,24 +10,13 @@
 #include "grid.h"
 #include "interpol_fun.h"
 
-//static float
-//*set_level_func_value(int num_P1, float *tmp_value, float *point_value)
-//{
-//  register int i;
-
-//  if((point_value = realloc(point_value,num_P1*sizeof(float))) == NULL)
-//    {
-//      fprintf(stdout,"Error in realloc\n");
-//      abort();
-//    }
 
 #define __copy_values(va,lim,tmp,x)		\
   do{for(va = 0; va < lim; va++)		\
       x[va] = tmp[va];				\
   }while(0)						
 
-//  return point_value;
-//}
+
 
 
 static inline float
@@ -82,31 +71,7 @@ interpol_linear_tree(int dim_space, int num_vertex,const float *g_point,
   return new_value;
 
 }
-/*
-static float 
-*find_point_value_discrete(int dim_space, int dim_nod, int num_vertex, 
-			   const int **index,const float *nod_values)
-{
-  register int i,j;
-  int id;
-  float *value = malloc(num_vertex*sizeof(float));
 
-  if(value == NULL){
-    fprintf(stdout,"Error in malloc\n");
-    abort();
-  }
-
-  for (i = 0; i < num_vertex; i++){
-    id = 0;
-    for (j = dim_space-1; j >= 0; j--)
-      id += (int) pow(dim_nod,j)*index[i][j];
-    value[i]=nod_values[id];
-  } 
-    
-
-  return value;
-}
-*/
 
 #define search_values(dim,dimN,lim,in,nva,oldva)  						\
 	do{															 		\

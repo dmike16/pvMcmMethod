@@ -436,7 +436,6 @@ vpschema(int dim_space,int grid_size,int dim_nod,float *u_n_plus_one,
   }
 
   I_n = (I_n * powf(step[0],DIM_SPACE))/(3.00f*v0);
-  printf(" I_n=%.4e\n",I_n);
 
   free(w);
 

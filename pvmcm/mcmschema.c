@@ -226,9 +226,7 @@ mcmschema(int dim_space,int grid_size,int dim_nod,float *u_n_plus_one,
 
   
   for(i = 0; i < grid_size; i++){
-    if((out_boundary(DIM_SPACE,dim_nod,index)))
-     {
-	eval_gradient(dim_nod,index,Du,u_n,step[0]);
+    eval_gradient(dim_nod,index,Du,u_n,step[0]);
 	if(norm_R3(Du) <= C*step[0] || p1p3(Du) <= C*step[0])
 	  u_n_plus_one[i] = mcm_below_threshold(index,dim_nod,u_n);
 	else
@@ -237,11 +235,7 @@ mcmschema(int dim_space,int grid_size,int dim_nod,float *u_n_plus_one,
 	    u_n_plus_one[i] = mcm_above_threshold(index,ni,u_n,delta_t,step,
 						  first,last,dim_nod,g_nod);
 	  }
-     }
-    else
-      u_n_plus_one[i] = u_n[i];
-
- index_cycle(j,DIM_SPACE,dim_nod,index);
+	index_cycle(j,DIM_SPACE,dim_nod,index);
     
   }
 }
