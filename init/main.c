@@ -810,6 +810,7 @@ main(int argc, char *argv[])
 
   //PVMCM method iteration
   //
+  clock_t preview_clock = 0.0;
   float vf;
   float eps = 1.5*step[0];
   v0 = 0.00f;
@@ -869,8 +870,9 @@ main(int argc, char *argv[])
     if(!draw_flag || draw_flag == 1)
     	autogenerate_octave_script(default_name,ic_name,dim_nod,first,last,level,dim_space);
     fprintf(stdout,"Script generated, into Dir \"scripts\"\n");
-    fprintf(stdout,"Time used by CPU : %g sec.\n",(clock()-start_clock)/
+    fprintf(stdout,"Time used by CPU : %g sec.\n",(clock()-start_clock-preview_clock)/
 	    (double) CLOCKS_PER_SEC);
+    preview_clock = clock()-start_clock;
     fprintf(stdout,"Do you want to plot the Solution(y/n)?\n");
     if((s=getc(stdin))=='\n')
           s = getc(stdin);
