@@ -35,7 +35,7 @@
 #include "noiseRand.h"
 
 #define TOL 10E-07
-#define _NLS 40
+#define _NLS 42
 #define _check_time(a,b) if((a) > (b))(a)=(b)
 #define pi 3.141592654f
 
@@ -402,8 +402,8 @@ autogenerate_octave_script(char *default_name,char *ic_name,int dim_nod,
  strcat(axis,"]);\n");
 
 
- char _patch[] = "p = patch(\"Faces\",faces,\"Vertices\",verts,\"FaceVertexCData\",c,...\n";
- char _patch_2[] = "\"FaceColor\",\"interp\",\"EdgeColor\",\"blue\");\n";
+ char _patch[] = "p = patch(\"Faces\",faces,\"Vertices\",verts,\"FaceVertexCData\",[178/255 34/255 34/255],...\n";
+ char _patch_2[] = "\"FaceColor\",\"interp\",\"EdgeColor\",\"interp\");\n";
 
  if(!draw_flag){
 	 vec_next->iov_base = axis;
@@ -419,7 +419,11 @@ autogenerate_octave_script(char *default_name,char *ic_name,int dim_nod,
 	 vec_next->iov_len = strlen(_patch_2);
 	 ++vec_next;
  
-	 vec_next->iov_base = "%set(p,\"FaceLighting\",\"phong\");\n";
+	 vec_next->iov_base = "set(p,\"FaceLighting\",\"gouraud\");\n";
+	 vec_next->iov_len = 33;
+	 ++vec_next;
+
+	 vec_next->iov_base = "set(gca,\"Color\",[0.8 0.8 0.8]);\n";
 	 vec_next->iov_len = 32;
 	 ++vec_next;
  
@@ -448,19 +452,23 @@ autogenerate_octave_script(char *default_name,char *ic_name,int dim_nod,
  vec_next->iov_len = strlen(isosurface_2);
  ++vec_next;
 
- char _patch_3[] = "p = patch(\"Faces\",faces,\"Vertices\",verts,\"FaceVertexCData\",c,...\n";
- vec_next->iov_base = _patch_3;
- vec_next->iov_len = strlen(_patch_3);
+ //char _patch_3[] = "p = patch(\"Faces\",faces,\"Vertices\",verts,\"FaceVertexCData\",c,...\n";
+ vec_next->iov_base = _patch;
+ vec_next->iov_len = strlen(_patch);
  ++vec_next;
 
- char _patch_4[] = "\"FaceColor\",\"interp\",\"EdgeColor\",\"blue\");\n";
- vec_next->iov_base = _patch_4;
- vec_next->iov_len = strlen(_patch_4);
+ //char _patch_4[] = "\"FaceColor\",\"interp\",\"EdgeColor\",\"blue\");\n";
+ vec_next->iov_base = _patch_2;
+ vec_next->iov_len = strlen(_patch_2);
  ++vec_next;
 
- vec_next->iov_base = "%set(p,\"FaceLighting\",\"phong\");\n";
+ vec_next->iov_base = "set(p,\"FaceLighting\",\"gouraud\");\n";
+ vec_next->iov_len = 33;
+ ++vec_next;
+
+ vec_next->iov_base = "set(gca,\"Color\",[0.8 0.8 0.8]);\n";
  vec_next->iov_len = 32;
- ++vec_next;
+ ++vec_next;  
 
  vec_next->iov_base = "pause";
  vec_next->iov_len = 5;
@@ -472,7 +480,7 @@ autogenerate_octave_script(char *default_name,char *ic_name,int dim_nod,
  if(!draw_flag)
 	 byte_wrote = writev(fd,vec,_NLS);
  else
-	 byte_wrote = writev(fd,vec,_NLS-11);
+	 byte_wrote = writev(fd,vec,_NLS-12);
 
  if((int)byte_wrote == -1){
    free(_open_2);
