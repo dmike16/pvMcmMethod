@@ -35,7 +35,13 @@
 #include "noiseRand.h"
 
 #define TOL 10E-07
-#define _NLS 42
+
+#ifdef MATLAB
+    #define _NLS 48
+#else
+    #define _NLS 46
+#endif
+
 #define _check_time(a,b) if((a) > (b))(a)=(b)
 #define pi 3.141592654f
 
@@ -195,10 +201,10 @@ autogenerate_octave_script(char *default_name,char *ic_name,int dim_nod,
 
   char *_open_1 = malloc((strlen(cwd)+33+1)*sizeof(char));
   _allocate_error(_open_1);
-  strcpy(_open_1,"f1=fopen(\"");
+  strcpy(_open_1,"f1=fopen('");
   strcat(_open_1,cwd);
   strcat(_open_1,"/arch/axesNodes.dat");
-  strcat(_open_1,"\");\n");
+  strcat(_open_1,"');\n");
   vec_next->iov_base = _open_1;
   vec_next->iov_len = strlen(_open_1);
   ++vec_next;
@@ -222,15 +228,15 @@ autogenerate_octave_script(char *default_name,char *ic_name,int dim_nod,
   vec_next->iov_len = strlen(cycle_for);
   ++vec_next;
 
-  vec_next->iov_base = "  x(i)=fscanf(f1,\"%f\",1);\n";
+  vec_next->iov_base = "  x(i)=fscanf(f1,'%f',1);\n";
   vec_next->iov_len = 26;
   ++vec_next;
 
-  vec_next->iov_base = "  y(i)=fscanf(f1,\"%f\",1);\n";
+  vec_next->iov_base = "  y(i)=fscanf(f1,'%f',1);\n";
   vec_next->iov_len = 26;
   ++vec_next;
 
-  vec_next->iov_base = "  z(i)=fscanf(f1,\"%f\",1);\n";
+  vec_next->iov_base = "  z(i)=fscanf(f1,'%f',1);\n";
   vec_next->iov_len = 26;
   ++vec_next;
 
@@ -245,11 +251,11 @@ autogenerate_octave_script(char *default_name,char *ic_name,int dim_nod,
  char *_open_2;
  _open_2 = malloc((15+strlen(cwd)+strlen(default_name)+1)*sizeof(char));
  _allocate_error(_open_2);
- strcpy(_open_2,"f2=fopen(\"");
+ strcpy(_open_2,"f2=fopen('");
  strcat(_open_2,cwd);
  strcat(_open_2,"/");
  strcat(_open_2,default_name);
- strcat(_open_2,"\");\n");
+ strcat(_open_2,"');\n");
  vec_next->iov_base = _open_2;
  vec_next->iov_len = strlen(_open_2);
  ++vec_next;
@@ -259,22 +265,22 @@ autogenerate_octave_script(char *default_name,char *ic_name,int dim_nod,
  if(!draw_flag) {
 	 _open_3 = malloc((strlen(cwd)+strlen(ic_name)+15+1)*sizeof(char));
 	 _allocate_error(_open_1);
-	 strcpy(_open_3,"f3=fopen(\"");
+     strcpy(_open_3,"f3=fopen('");
 	 strcat(_open_3,cwd);
 	 strcat(_open_3,"/");
 	 strcat(_open_3,ic_name);
-	 strcat(_open_3,"\");\n");
+     strcat(_open_3,"');\n");
  
 	 vec_next->iov_base = _open_3;
 	 vec_next->iov_len = strlen(_open_3);
 	 ++vec_next;
 
-	 vec_next->iov_base = "dataf3=fread(f3,inf,\"float\");\n";
+     vec_next->iov_base = "dataf3=fread(f3,inf,'float');\n";
 	 vec_next->iov_len  =  30;
 	 ++vec_next;
  }
  
- vec_next->iov_base = "dataf2=fread(f2,inf,\"float\");\n";
+ vec_next->iov_base = "dataf2=fread(f2,inf,'float');\n";
  vec_next->iov_len  =  30;
  ++vec_next;
 
@@ -306,15 +312,15 @@ autogenerate_octave_script(char *default_name,char *ic_name,int dim_nod,
  vec_next->iov_len = strlen(cycle_for_k);
  ++vec_next;
  
- char *id=malloc(30 + 2*strlen(range));
+ char *id=malloc(29 + 2*strlen(range));
  _allocate_error(id);
  strcpy(id,"      id=k+(j-1)*");
  strcat(id,range);
  strcat(id,"+(i-1)*");
  strcat(id,range);
- strcat(id,"**2;\n");
+ strcat(id,"^2;\n");
  vec_next->iov_base = id;
- vec_next->iov_len = 29 + 2*strlen(range);
+ vec_next->iov_len = 28 + 2*strlen(range);
  ++vec_next;
 
  vec_next->iov_base = "      v(k,j,i)=dataf2(id);\n";
@@ -375,6 +381,14 @@ autogenerate_octave_script(char *default_name,char *ic_name,int dim_nod,
 	 vec_next->iov_base = isosurface_1;
 	 vec_next->iov_len = strlen(isosurface_1);
 	 ++vec_next;
+
+     vec_next->iov_base = "a=size(c);\n";
+     vec_next->iov_len = 11;
+     ++vec_next;
+
+     vec_next->iov_base = "cc=ones(a(1),3);\n";
+     vec_next->iov_len = 17;
+     ++vec_next;
  }
  
  char *first_axis,*last_axis,*axis;
@@ -402,9 +416,12 @@ autogenerate_octave_script(char *default_name,char *ic_name,int dim_nod,
  strcat(axis,"]);\n");
 
 
- char _patch[] = "p = patch(\"Faces\",faces,\"Vertices\",verts,\"FaceVertexCData\",[178/255 34/255 34/255],...\n";
- char _patch_2[] = "\"FaceColor\",\"interp\",\"EdgeColor\",\"interp\");\n";
-
+ char _patch[] = "p = patch('Faces',faces,'Vertices',verts,'FaceVertexCData',cc,...\n";
+#ifdef MATLAB
+ char _patch_2[] = "'FaceColor','interp','EdgeColor','none');\n";
+#else
+ char _patch_2[] = "'FaceColor','interp','EdgeColor','interp');\n";
+#endif
  if(!draw_flag){
 	 vec_next->iov_base = axis;
 	 vec_next->iov_len = strlen(axis);
@@ -419,13 +436,19 @@ autogenerate_octave_script(char *default_name,char *ic_name,int dim_nod,
 	 vec_next->iov_len = strlen(_patch_2);
 	 ++vec_next;
  
-	 vec_next->iov_base = "set(p,\"FaceLighting\",\"gouraud\");\n";
+     vec_next->iov_base = "set(p,'FaceLighting','gouraud');\n";
 	 vec_next->iov_len = 33;
 	 ++vec_next;
 
-	 vec_next->iov_base = "set(gca,\"Color\",[0.8 0.8 0.8]);\n";
-	 vec_next->iov_len = 32;
+     vec_next->iov_base = "set(gca,'Color',[178/255 34/255 34/255]);\n";
+     vec_next->iov_len = 42;
 	 ++vec_next;
+
+#ifdef MATLAB
+     vec_next->iov_base = "camlight;\n";
+     vec_next->iov_len = 10;
+     ++vec_next;
+#endif
  
 	 vec_next->iov_base = "figure()\n";
 	 vec_next->iov_len = 9;
@@ -452,6 +475,14 @@ autogenerate_octave_script(char *default_name,char *ic_name,int dim_nod,
  vec_next->iov_len = strlen(isosurface_2);
  ++vec_next;
 
+ vec_next->iov_base = "a=size(c);\n";
+ vec_next->iov_len = 11;
+ ++vec_next;
+
+ vec_next->iov_base = "cc=ones(a(1),3);\n";
+ vec_next->iov_len = 17;
+ ++vec_next;
+
  //char _patch_3[] = "p = patch(\"Faces\",faces,\"Vertices\",verts,\"FaceVertexCData\",c,...\n";
  vec_next->iov_base = _patch;
  vec_next->iov_len = strlen(_patch);
@@ -462,13 +493,19 @@ autogenerate_octave_script(char *default_name,char *ic_name,int dim_nod,
  vec_next->iov_len = strlen(_patch_2);
  ++vec_next;
 
- vec_next->iov_base = "set(p,\"FaceLighting\",\"gouraud\");\n";
+ vec_next->iov_base = "set(p,'FaceLighting','gouraud');\n";
  vec_next->iov_len = 33;
  ++vec_next;
 
- vec_next->iov_base = "set(gca,\"Color\",[0.8 0.8 0.8]);\n";
- vec_next->iov_len = 32;
+ vec_next->iov_base = "set(gca,\"Color\",[178/255 34/255 34/255]);\n";
+ vec_next->iov_len = 42;
  ++vec_next;  
+
+#ifdef MATLAB
+     vec_next->iov_base = "camlight;\n";
+     vec_next->iov_len = 10;
+     ++vec_next;
+#endif
 
  vec_next->iov_base = "pause";
  vec_next->iov_len = 5;
@@ -480,7 +517,11 @@ autogenerate_octave_script(char *default_name,char *ic_name,int dim_nod,
  if(!draw_flag)
 	 byte_wrote = writev(fd,vec,_NLS);
  else
-	 byte_wrote = writev(fd,vec,_NLS-12);
+#ifdef MATLAB
+     byte_wrote = writev(fd,vec,_NLS-15);
+#else
+    byte_wrote = writev(fd,vec,_NLS-14);
+#endif
 
  if((int)byte_wrote == -1){
    free(_open_2);
