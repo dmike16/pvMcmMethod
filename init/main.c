@@ -483,12 +483,11 @@ autogenerate_octave_script(char *default_name,char *ic_name,int dim_nod,
  vec_next->iov_len = 17;
  ++vec_next;
 
- //char _patch_3[] = "p = patch(\"Faces\",faces,\"Vertices\",verts,\"FaceVertexCData\",c,...\n";
- vec_next->iov_base = _patch;
+  vec_next->iov_base = _patch;
  vec_next->iov_len = strlen(_patch);
  ++vec_next;
 
- //char _patch_4[] = "\"FaceColor\",\"interp\",\"EdgeColor\",\"blue\");\n";
+ 
  vec_next->iov_base = _patch_2;
  vec_next->iov_len = strlen(_patch_2);
  ++vec_next;
@@ -593,7 +592,6 @@ enum { VPMCM, MCM} SC = VPMCM;
 // Enumeration of Initial Condition. Default is the sphere
 //
 enum { SPHERE, TORUS, DUMBBELL, GARG} IC = SPHERE;
-
 
 float timeto,level,v0;
 static char *ic_name = "arch/IC.dat";
@@ -754,6 +752,8 @@ main(int argc, char *argv[])
 	  }
 	  tmp = strtok(NULL,"\n");
 	  level = atof(tmp);
+	  if(level != 0.0f)
+	    level = -level;
 	  first = (float*) malloc(dim_space*sizeof(float));
 	  last = (float*) malloc(dim_space*sizeof(float));
 	  for (i = 0; (tmp = strtok(NULL, "\n")) != NULL && i < dim_space;i++){
@@ -771,13 +771,13 @@ main(int argc, char *argv[])
   }
   else
   {
-          timeto =  0.05f;
+          timeto =  0.01f;
 	  dim_space = 3;
 	  dim_nod = 149;
 	  first = (float*) malloc(dim_space*sizeof(float));
 	  last = (float*) malloc(dim_space*sizeof(float));
-	  first[0]=first[1]=first[2]=1;
-	  last[0]=last[1]=last[2]=13;
+	  first[0]=first[1]=first[2]=-8.1;
+	  last[0]=last[1]=last[2]=8.1;
 	  level = 0.0f;
   }
   step = malloc(dim_space*sizeof(float));

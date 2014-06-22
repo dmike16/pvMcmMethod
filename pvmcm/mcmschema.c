@@ -19,7 +19,7 @@
 
 #define DIM_SPACE  3
 #define NUM_VEC    2
-#define C          0.05f
+#define C          0.1f
 #define _step(x)   sqrt(2.00f*(x))
 #define _z_dim(x)  (x)*(x)
 #define _y_dim(x)  (x)        
