@@ -838,7 +838,7 @@ main(int argc, char *argv[])
   float *u_n_plus_one = malloc(grid_size*sizeof(float));
   float *u_n = malloc(grid_size*sizeof(float));
   char *default_name = NULL;
-  char s;
+  char s,_dt;
   char *bar = malloc(18*sizeof(char));
 
   _allocate_error(bar);
@@ -891,7 +891,7 @@ main(int argc, char *argv[])
     	  default_name = "arch/dflMCMsolution.dat";
     	  if((make_output_file(u_n_plus_one,default_name,grid_size)) != -1)
     	  {
-    		  fprintf(stdout,"\nTime %.2f reached in %d iter\n",timeto,i);
+    		  fprintf(stdout,"\nTime %.4f reached in %d iter\n",timeto,i);
     		  fprintf(stdout,"FILE CREATED \n");
     	  }
     	  else
@@ -957,10 +957,27 @@ main(int argc, char *argv[])
 
     	if(s == 'y'){
     		fprintf(stdout,"Insert the new output TIME:");
-    		if(fscanf(stdin,"%f",&timeto) != EOF)
-    			delta_t = delta_t_orig;
+    		if(fscanf(stdin,"%f",&timeto) != EOF){
+		  if(delta_t != delta_t_orig){
+		    fprintf(stdout,"Do you want keep using the current delta t (y/n)?\n");
+		    if((_dt=getc(stdin))=='\n')
+		      _dt = getc(stdin);
+		    switch(_dt){
+		    case 'n':
+		      delta_t = delta_t_orig;
+		      break;
+		    case 'y':
+		      fprintf(stdout,"delta t did not change\n");
+		      break;
+		    default:
+		      fprintf(stderr,"Something strange you tapped\n");
+		      goto clean;
+		      break;
+		    }
+		  }
+		}
     		else
-    			break;
+    			goto clean;
     	}
     	else
     		break;
@@ -973,6 +990,7 @@ main(int argc, char *argv[])
   }while(s != 'n' && (timeto));
 
   // Clean Allocated Memory
+  clean:
   clear_grid(g_nod,dim_space);
   free(step);
   free(first);
@@ -980,7 +998,6 @@ main(int argc, char *argv[])
   free(nod_values);
   free(u_n);
   free(u_n_plus_one);
-  //free(u_vp_sphere);
   free(bar);
     
   return 0;
