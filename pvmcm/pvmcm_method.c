@@ -411,7 +411,7 @@ vpschema(int dim_space,int grid_size,int dim_nod,float *u_n_plus_one,
 	eval_gradient(dim_nod,index,Du,u_n,step[0]);
 	if(norm_R3(Du) <= C*step[0] || p1p3(Du) <= C*step[0])
 	  {
-	    w[i] = (mcm_below_threshold(index,dim_nod,u_n)-6.00f*u_n[i])*(1/(step[0]*step[0]));
+	    w[i] = (mcm_below_threshold(index,dim_nod,u_n)-6.00f*u_n[i])*(1/(6.0f*delta_t));
 	    
 	  }
 				

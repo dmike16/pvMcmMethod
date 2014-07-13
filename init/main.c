@@ -776,8 +776,8 @@ main(int argc, char *argv[])
 	  dim_nod = 149;
 	  first = (float*) malloc(dim_space*sizeof(float));
 	  last = (float*) malloc(dim_space*sizeof(float));
-	  first[0]=first[1]=first[2]=-8.1;
-	  last[0]=last[1]=last[2]=8.1;
+	  first[0]=first[1]=first[2]=-8.0;
+	  last[0]=last[1]=last[2]=8.0;
 	  level = 0.0f;
   }
   step = malloc(dim_space*sizeof(float));
