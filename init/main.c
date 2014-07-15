@@ -859,6 +859,7 @@ main(int argc, char *argv[])
 
   //PVMCM method iteration
   //
+  float einf=0.0f;
   clock_t preview_clock = 0.0;
   float vf;
   float eps = 1.5*step[0];
@@ -913,8 +914,9 @@ main(int argc, char *argv[])
     //eval_method_errno(u_n_plus_one,u_vp_sphere,grid_size);
     for(i=0;i<grid_size;i++)
     	vf += 1-hvSide(u_n_plus_one[i]-level,eps);
-
-    printf("|%.2f -%.2f| = %e\n",v0,vf*powf(step[0],3),fabs(v0-(vf*powf(step[0],3))));
+    einf=fabs(v0-(vf*powf(step[0],3)));
+    printf("Einf=|%.2f -%.2f| = %e\n",v0,vf*powf(step[0],3),einf);
+    printf("Erel= %e\n",einf/v0);
     //Generate octave script in order to plot the solution
     if(!draw_flag || draw_flag == 1)
     	autogenerate_octave_script(default_name,ic_name,dim_nod,first,last,level,dim_space);
